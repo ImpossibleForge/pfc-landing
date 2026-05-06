@@ -1443,8 +1443,8 @@ footer a:hover { color: var(--accent); }
           <span class="result-val bad" id="r-athena">—</span>
         </div>
         <div class="result-row">
-          <span class="result-label">PFC query cost</span>
-          <span class="result-val good">$0.00</span>
+          <span class="result-label">PFC query cost (same-region)*</span>
+          <span class="result-val good">~$0.00</span>
         </div>
         <div class="result-row">
           <span class="result-label">Monthly savings estimate</span>
@@ -1458,7 +1458,7 @@ footer a:hover { color: var(--accent); }
         </div>
 
         <p style="font-size:11px;color:var(--muted);margin-top:16px;line-height:1.6;">
-          Estimates based on AWS S3 Standard pricing ($0.023/GB/month), Athena ($5/TB scanned), and PFC ~9% compression ratio. Actual savings vary.
+          Estimates based on AWS S3 Standard pricing ($0.023/GB/month), Athena ($5/TB scanned), and PFC ~9% compression ratio. Actual savings vary. *PFC query cost assumes same-region access (EC2/ECS to S3); internet egress applies at $0.09/GB.
         </p>
       </div>
     </div>

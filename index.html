@@ -1408,7 +1408,7 @@ footer a:hover { color: var(--accent); }
             Monthly log volume
             <span id="vol-display">500 GB</span>
           </div>
-          <input type="range" id="vol-slider" min="10" max="10000" step="10" value="500">
+          <input type="range" id="vol-slider" min="10" max="500000" step="500" value="500">
         </div>
 
         <div class="calc-field">
@@ -1416,7 +1416,7 @@ footer a:hover { color: var(--accent); }
             Athena/S3 queries per month
             <span id="query-display">20</span>
           </div>
-          <input type="range" id="query-slider" min="1" max="200" step="1" value="20">
+          <input type="range" id="query-slider" min="1" max="10000" step="50" value="20">
         </div>
 
         <div class="calc-field">
@@ -1756,7 +1756,7 @@ function calcUpdate() {
   const scope = parseFloat(scopeSlider.value) / 100;
 
   document.getElementById('vol-display').textContent = vol >= 1000 ? (vol/1000).toFixed(1) + ' TB' : vol + ' GB';
-  document.getElementById('query-display').textContent = queries;
+  document.getElementById('query-display').textContent = queries >= 1000 ? (queries/1000).toFixed(1) + 'K' : queries;
   document.getElementById('scope-display').textContent = Math.round(scope * 100) + '%';
 
   // Storage costs (S3 $0.023/GB/month)

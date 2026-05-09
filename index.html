@@ -638,6 +638,209 @@ input[type=range]::-webkit-slider-thumb:hover {
   margin-top: 8px;
 }
 
+/* CALCULATOR v2.0 — Button Groups & Compare Layout */
+.btn-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.calc-btn {
+  background: var(--bg4);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.calc-btn:hover {
+  border-color: var(--accent);
+  color: var(--white);
+}
+
+.calc-btn.active {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.btn-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 8px;
+  opacity: 0.7;
+}
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 480px) {
+  .compare-grid { grid-template-columns: 1fr; }
+}
+
+.compare-col {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.today-col { border-color: rgba(255,71,87,0.25); }
+.pfc-col   { border-color: rgba(79,195,247,0.25); }
+
+.compare-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.today-header { color: var(--red); }
+.pfc-header   { color: var(--accent); }
+
+.compare-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 0;
+  font-size: 11px;
+}
+
+.compare-label { color: var(--muted); }
+.compare-val   { font-weight: 700; color: var(--white); font-size: 12px; }
+.compare-val.bad  { color: var(--red); }
+.compare-val.good { color: var(--accent); }
+
+.compare-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 0;
+}
+
+.compare-total .compare-label { color: var(--white); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+.compare-total .compare-val   { font-size: 14px; }
+
+.savings-box {
+  margin-bottom: 16px;
+  padding: 20px 24px;
+  background: var(--accent-glow);
+  border: 1px solid rgba(79,195,247,0.25);
+  border-radius: 6px;
+}
+
+.savings-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.savings-sep {
+  width: 1px;
+  height: 50px;
+  background: rgba(79,195,247,0.2);
+  flex-shrink: 0;
+}
+
+.savings-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.savings-num {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -2px;
+  line-height: 1;
+}
+
+.savings-total {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--accent-dim);
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.athena-note {
+  font-size: 11px;
+  color: var(--muted);
+  background: rgba(255,167,38,0.06);
+  border: 1px solid rgba(255,167,38,0.2);
+  border-radius: 4px;
+  padding: 10px 14px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.calc-cta { margin-bottom: 14px; }
+
+.cta-calc-btn {
+  display: inline-block;
+  padding: 11px 22px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s;
+  font-size: 13px;
+}
+
+.cta-calc-btn.cta-ghost {
+  background: var(--accent-glow);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+.cta-calc-btn.cta-ghost:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.cta-calc-btn.cta-solid {
+  background: var(--accent);
+  color: var(--bg);
+  border: 1px solid var(--accent);
+}
+
+.cta-calc-btn.cta-solid:hover { background: var(--accent-dim); }
+
+.cta-calc-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 10px;
+}
+
+.cta-calc-sub { font-size: 11px; color: var(--muted); margin-top: 8px; }
+.cta-calc-sub a { color: var(--accent); }
+
+.calc-footnote {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 /* TECH */
 #tech .tech-grid {
   display: grid;
@@ -1393,73 +1596,128 @@ footer a:hover { color: var(--accent); }
   </div>
 </section>
 
-<!-- CALCULATOR -->
+<!-- CALCULATOR v2.0 -->
 <div id="calculator">
   <div class="calc-inner">
     <div class="section-label">Cost Calculator</div>
-    <h2>How much are you overpaying?</h2>
-    <p class="section-sub">Adjust the sliders to see your potential annual savings.</p>
+    <h2>Calculate your real log costs.</h2>
+    <p class="section-sub">Tell us about your current setup — see exactly what you pay today and what you'd save with PFC.</p>
 
     <div class="calc-grid">
       <div class="calc-inputs">
 
         <div class="calc-field">
           <div class="calc-label">
-            Monthly log volume
+            Monthly raw log volume
             <span id="vol-display">500 GB</span>
           </div>
           <input type="range" id="vol-slider" min="10" max="500000" step="500" value="500">
         </div>
 
         <div class="calc-field">
-          <div class="calc-label">
-            Athena/S3 queries per month
-            <span id="query-display">20</span>
+          <div class="calc-label">How often do you query archived logs?</div>
+          <div class="btn-group" id="freq-group">
+            <button class="calc-btn" data-val="5">Rarely</button>
+            <button class="calc-btn" data-val="16">Weekly</button>
+            <button class="calc-btn active" data-val="30">Daily</button>
+            <button class="calc-btn" data-val="150">Multiple / day</button>
           </div>
-          <input type="range" id="query-slider" min="1" max="10000" step="50" value="20">
+          <div class="btn-hint" id="freq-hint">~30 queries / month</div>
         </div>
 
         <div class="calc-field">
-          <div class="calc-label">
-            Average query scope (% of monthly data)
-            <span id="scope-display">100%</span>
+          <div class="calc-label">How far back do you typically search?</div>
+          <div class="btn-group" id="scope-group">
+            <button class="calc-btn" data-val="3">Last 24h</button>
+            <button class="calc-btn active" data-val="10">Last 3 days</button>
+            <button class="calc-btn" data-val="25">Last week</button>
+            <button class="calc-btn" data-val="100">Last month</button>
           </div>
-          <input type="range" id="scope-slider" min="10" max="100" step="5" value="100">
+          <div class="btn-hint" id="scope-hint">~10% of monthly volume per query</div>
+        </div>
+
+        <div class="calc-field">
+          <div class="calc-label">How long do you retain logs?</div>
+          <div class="btn-group" id="retention-group">
+            <button class="calc-btn" data-val="3">90 days</button>
+            <button class="calc-btn active" data-val="12">1 year</button>
+            <button class="calc-btn" data-val="24">2 years</button>
+            <button class="calc-btn" data-val="84">7 years&nbsp;<small style="opacity:0.6">(Audit)</small></button>
+          </div>
         </div>
 
       </div>
 
       <div class="calc-results">
-        <div class="result-row">
-          <span class="result-label">Current storage (gzip, S3)</span>
-          <span class="result-val bad" id="r-storage-now">—</span>
-        </div>
-        <div class="result-row">
-          <span class="result-label">Storage with PFC (~9%)</span>
-          <span class="result-val good" id="r-storage-pfc">—</span>
-        </div>
-        <div class="result-row">
-          <span class="result-label">Athena query cost / month</span>
-          <span class="result-val bad" id="r-athena">—</span>
-        </div>
-        <div class="result-row">
-          <span class="result-label">PFC query cost (same-region)*</span>
-          <span class="result-val good">~$0.00</span>
-        </div>
-        <div class="result-row">
-          <span class="result-label">Monthly savings estimate</span>
-          <span class="result-val good" id="r-monthly">—</span>
+
+        <div class="compare-grid">
+          <div class="compare-col today-col">
+            <div class="compare-header today-header">Today</div>
+            <div class="compare-row">
+              <span class="compare-label">Storage (gzip + S3)</span>
+              <span class="compare-val bad" id="r-storage-now">—</span>
+            </div>
+            <div class="compare-row">
+              <span class="compare-label">Athena queries</span>
+              <span class="compare-val bad" id="r-athena">—</span>
+            </div>
+            <div class="compare-divider"></div>
+            <div class="compare-row compare-total">
+              <span class="compare-label">Monthly</span>
+              <span class="compare-val bad" id="r-total-now">—</span>
+            </div>
+            <div class="compare-row compare-total">
+              <span class="compare-label">Annual</span>
+              <span class="compare-val bad" id="r-annual-now">—</span>
+            </div>
+          </div>
+
+          <div class="compare-col pfc-col">
+            <div class="compare-header pfc-header">With PFC</div>
+            <div class="compare-row">
+              <span class="compare-label">Storage (~9%)</span>
+              <span class="compare-val good" id="r-storage-pfc">—</span>
+            </div>
+            <div class="compare-row">
+              <span class="compare-label">Query cost</span>
+              <span class="compare-val good">~$0.00</span>
+            </div>
+            <div class="compare-divider"></div>
+            <div class="compare-row compare-total">
+              <span class="compare-label">Monthly</span>
+              <span class="compare-val good" id="r-total-pfc">—</span>
+            </div>
+            <div class="compare-row compare-total">
+              <span class="compare-label">Annual</span>
+              <span class="compare-val good" id="r-annual-pfc">—</span>
+            </div>
+          </div>
         </div>
 
         <div class="savings-box">
-          <div class="savings-label">Annual Savings Estimate</div>
-          <div class="savings-num" id="r-annual">—</div>
-          <div class="savings-period">per year</div>
+          <div class="savings-row">
+            <div>
+              <div class="savings-label">Annual Savings</div>
+              <div class="savings-num" id="r-annual">—</div>
+            </div>
+            <div class="savings-sep"></div>
+            <div>
+              <div class="savings-label">Over <span id="r-retention-label">1 year</span></div>
+              <div class="savings-total" id="r-cumulative">—</div>
+            </div>
+          </div>
         </div>
 
-        <p style="font-size:11px;color:var(--muted);margin-top:16px;line-height:1.6;">
-          Estimates based on AWS S3 Standard pricing ($0.023/GB/month), Athena ($5/TB scanned), and PFC ~9% compression ratio. Actual savings vary. *PFC query cost assumes same-region access (EC2/ECS to S3); internet egress applies at $0.09/GB.
+        <div class="athena-note">
+          ⚠️ Athena scans entire files without perfect hour-level partitioning. Most teams pay 2–5× more than these estimates. PFC reads only the exact blocks you need — no overscanning.
+        </div>
+
+        <div class="calc-cta" id="calc-cta"></div>
+
+        <p class="calc-footnote">
+          Based on AWS S3 Standard ($0.023/GB/mo), Athena ($5/TB scanned), PFC ~9% compression ratio. *Same-region access assumed; internet egress applies at $0.09/GB.
         </p>
+
       </div>
     </div>
   </div>
@@ -1735,66 +1993,102 @@ function copyCode(id) {
   });
 }
 
-// CALCULATOR
-const volSlider = document.getElementById('vol-slider');
-const querySlider = document.getElementById('query-slider');
-const scopeSlider = document.getElementById('scope-slider');
+// CALCULATOR v2.0
+(function() {
+  const volSlider = document.getElementById('vol-slider');
+  let freqVal      = 30;
+  let scopeVal     = 10;
+  let retentionVal = 12;
 
-function fmt(n) {
-  if (n >= 1000) return '$' + (n/1000).toFixed(1) + 'K';
-  return '$' + n.toFixed(2);
-}
-
-function fmtStorage(gb) {
-  if (gb >= 1000) return (gb/1000).toFixed(1) + ' TB/mo';
-  return gb.toFixed(0) + ' GB/mo';
-}
-
-function calcUpdate() {
-  const vol = parseFloat(volSlider.value);     // GB per month
-  const queries = parseFloat(querySlider.value);
-  const scope = parseFloat(scopeSlider.value) / 100;
-
-  document.getElementById('vol-display').textContent = vol >= 1000 ? (vol/1000).toFixed(1) + ' TB' : vol + ' GB';
-  document.getElementById('query-display').textContent = queries >= 1000 ? (queries/1000).toFixed(1) + 'K' : queries;
-  document.getElementById('scope-display').textContent = Math.round(scope * 100) + '%';
-
-  // Storage costs (S3 $0.023/GB/month)
-  // gzip ~12%, PFC ~9%
-  const gzipRatio = 0.12;
-  const pfcRatio = 0.09;
-  const s3Price = 0.023;
-
-  const storageNow = vol * gzipRatio * s3Price;
-  const storagePfc = vol * pfcRatio * s3Price;
-
-  // Athena cost: $5 per TB scanned
-  // scope = % of monthly data queried per query
-  const scannedPerQuery = vol * gzipRatio * scope; // GB
-  const athenaPerQuery = (scannedPerQuery / 1000) * 5; // $5/TB
-  const athenaMonthly = athenaPerQuery * queries;
-
-  const storageSaving = storageNow - storagePfc;
-  const monthlyTotal = storageSaving + athenaMonthly;
-  const annualTotal = monthlyTotal * 12;
-
-  document.getElementById('r-storage-now').textContent = fmt(storageNow) + '/mo (' + fmtStorage(vol * gzipRatio) + ')';
-  document.getElementById('r-storage-pfc').textContent = fmt(storagePfc) + '/mo (' + fmtStorage(vol * pfcRatio) + ')';
-  document.getElementById('r-athena').textContent = fmt(athenaMonthly) + '/mo';
-  document.getElementById('r-monthly').textContent = fmt(monthlyTotal) + '/mo';
-
-  const annualEl = document.getElementById('r-annual');
-  if (annualTotal >= 1000) {
-    annualEl.textContent = '$' + (annualTotal/1000).toFixed(1) + 'K';
-  } else {
-    annualEl.textContent = '$' + Math.round(annualTotal);
+  function setupBtnGroup(groupId, onSelect) {
+    const group = document.getElementById(groupId);
+    if (!group) return;
+    group.querySelectorAll('.calc-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        group.querySelectorAll('.calc-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        onSelect(parseFloat(btn.dataset.val));
+      });
+    });
   }
-}
 
-volSlider.addEventListener('input', calcUpdate);
-querySlider.addEventListener('input', calcUpdate);
-scopeSlider.addEventListener('input', calcUpdate);
-calcUpdate();
+  function fmtMoney(n) {
+    if (n >= 1000000) return '$' + (n/1000000).toFixed(1) + 'M';
+    if (n >= 1000)    return '$' + (n/1000).toFixed(1) + 'K';
+    return '$' + n.toFixed(0);
+  }
+
+  function calcUpdate() {
+    var vol = parseFloat(volSlider.value);
+
+    document.getElementById('vol-display').textContent =
+      vol >= 1000 ? (vol/1000).toFixed(1) + ' TB' : vol + ' GB';
+
+    var gzipRatio = 0.12;
+    var pfcRatio  = 0.09;
+    var s3Price   = 0.023;
+    var scope     = scopeVal / 100;
+
+    var storageNow = vol * gzipRatio * s3Price;
+    var storagePfc = vol * pfcRatio  * s3Price;
+
+    var scannedGB     = vol * gzipRatio * scope;
+    var athenaMonthly = (scannedGB / 1000) * 5 * freqVal;
+
+    var monthlyNow    = storageNow + athenaMonthly;
+    var monthlyPfc    = storagePfc;
+    var monthlySaving = monthlyNow - monthlyPfc;
+    var annualSaving  = monthlySaving * 12;
+    var cumulative    = annualSaving * (retentionVal / 12);
+
+    document.getElementById('r-storage-now').textContent = fmtMoney(storageNow) + '/mo';
+    document.getElementById('r-athena').textContent      = fmtMoney(athenaMonthly) + '/mo';
+    document.getElementById('r-total-now').textContent   = fmtMoney(monthlyNow) + '/mo';
+    document.getElementById('r-annual-now').textContent  = fmtMoney(monthlyNow * 12) + '/yr';
+    document.getElementById('r-storage-pfc').textContent = fmtMoney(storagePfc) + '/mo';
+    document.getElementById('r-total-pfc').textContent   = fmtMoney(monthlyPfc) + '/mo';
+    document.getElementById('r-annual-pfc').textContent  = fmtMoney(monthlyPfc * 12) + '/yr';
+    document.getElementById('r-annual').textContent      = fmtMoney(annualSaving);
+    document.getElementById('r-cumulative').textContent  = fmtMoney(cumulative);
+
+    var retLabels = { 3: '90 days', 12: '1 year', 24: '2 years', 84: '7 years' };
+    document.getElementById('r-retention-label').textContent = retLabels[retentionVal] || retentionVal + ' mo';
+
+    var ctaEl = document.getElementById('calc-cta');
+    if (annualSaving < 1000) {
+      ctaEl.innerHTML = '<a class="cta-calc-btn cta-ghost" href="#quickstart">Install free — zero setup →</a>';
+    } else if (annualSaving < 20000) {
+      ctaEl.innerHTML = '<a class="cta-calc-btn cta-ghost" href="#quickstart">Start saving today — free install →</a><div class="cta-calc-sub">or <a href="mailto:info@impossibleforge.com">talk to us</a></div>';
+    } else if (annualSaving < 100000) {
+      ctaEl.innerHTML = '<div class="cta-calc-label">Your savings are significant.</div><a class="cta-calc-btn cta-solid" href="mailto:info@impossibleforge.com">Talk to us about your setup →</a>';
+    } else {
+      ctaEl.innerHTML = '<div class="cta-calc-label">You\'re leaving ' + fmtMoney(annualSaving) + ' on the table.</div><a class="cta-calc-btn cta-solid" href="mailto:info@impossibleforge.com">Contact us directly →</a>';
+    }
+  }
+
+  var freqHints  = { 5: '~5 queries / month', 16: '~16 queries / month', 30: '~30 queries / month', 150: '~150 queries / month' };
+  var scopeHints = { 3: '~3% of monthly volume per query', 10: '~10% of monthly volume per query', 25: '~25% of monthly volume per query', 100: '100% of monthly volume per query' };
+
+  setupBtnGroup('freq-group', function(val) {
+    freqVal = val;
+    document.getElementById('freq-hint').textContent = freqHints[val] || '';
+    calcUpdate();
+  });
+
+  setupBtnGroup('scope-group', function(val) {
+    scopeVal = val;
+    document.getElementById('scope-hint').textContent = scopeHints[val] || '';
+    calcUpdate();
+  });
+
+  setupBtnGroup('retention-group', function(val) {
+    retentionVal = val;
+    calcUpdate();
+  });
+
+  volSlider.addEventListener('input', calcUpdate);
+  calcUpdate();
+})();
 
 // HAMBURGER MENU
 const hamburger = document.getElementById('hamburger');

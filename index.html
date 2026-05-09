@@ -837,7 +837,7 @@ input[type=range]::-webkit-slider-thumb:hover {
 
 .freq-custom-row {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 10px;
   margin-top: 8px;
   flex-wrap: wrap;
@@ -847,6 +847,7 @@ input[type=range]::-webkit-slider-thumb:hover {
   font-size: 11px;
   color: var(--muted);
   opacity: 0.7;
+  line-height: 1;
 }
 
 .freq-custom-input {
@@ -860,6 +861,7 @@ input[type=range]::-webkit-slider-thumb:hover {
   width: 90px;
   outline: none;
   transition: border-color 0.15s;
+  -moz-appearance: textfield;
 }
 
 .freq-custom-input:focus {
@@ -869,6 +871,12 @@ input[type=range]::-webkit-slider-thumb:hover {
 .freq-custom-input::placeholder {
   color: var(--muted);
   opacity: 0.5;
+}
+
+.freq-custom-input::-webkit-outer-spin-button,
+.freq-custom-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 /* MIGRATION TOOLS STRIP */

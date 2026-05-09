@@ -1642,7 +1642,7 @@ footer a:hover { color: var(--accent); }
             <button class="calc-btn" data-val="3">90 days</button>
             <button class="calc-btn active" data-val="12">1 year</button>
             <button class="calc-btn" data-val="24">2 years</button>
-            <button class="calc-btn" data-val="84">7 years&nbsp;<small style="opacity:0.6">(Audit)</small></button>
+            <button class="calc-btn" data-val="84">7 years (Audit)</button>
           </div>
         </div>
 
@@ -2056,9 +2056,9 @@ function copyCode(id) {
 
     var ctaEl = document.getElementById('calc-cta');
     if (annualSaving < 1000) {
-      ctaEl.innerHTML = '<a class="cta-calc-btn cta-ghost" href="#quickstart">Install free — zero setup →</a>';
+      ctaEl.innerHTML = '<a class="cta-calc-btn cta-ghost" href="#quickstart">Free for personal &amp; OSS — install now →</a><div class="cta-calc-sub">Commercial use? <a href="mailto:info@impossibleforge.com">Get a license →</a></div>';
     } else if (annualSaving < 20000) {
-      ctaEl.innerHTML = '<a class="cta-calc-btn cta-ghost" href="#quickstart">Start saving today — free install →</a><div class="cta-calc-sub">or <a href="mailto:info@impossibleforge.com">talk to us</a></div>';
+      ctaEl.innerHTML = '<a class="cta-calc-btn cta-ghost" href="#quickstart">Start saving today — get started →</a><div class="cta-calc-sub">Free for personal &amp; OSS &nbsp;·&nbsp; <a href="mailto:info@impossibleforge.com">Commercial license →</a></div>';
     } else if (annualSaving < 100000) {
       ctaEl.innerHTML = '<div class="cta-calc-label">Your savings are significant.</div><a class="cta-calc-btn cta-solid" href="mailto:info@impossibleforge.com">Talk to us about your setup →</a>';
     } else {

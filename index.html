@@ -835,6 +835,104 @@ input[type=range]::-webkit-slider-thumb:hover {
 .cta-calc-sub { font-size: 11px; color: var(--muted); margin-top: 8px; }
 .cta-calc-sub a { color: var(--accent); }
 
+.freq-custom-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.freq-custom-label {
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.freq-custom-input {
+  background: var(--bg4);
+  border: 1px solid var(--border);
+  color: var(--white);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  width: 90px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.freq-custom-input:focus {
+  border-color: var(--accent);
+}
+
+.freq-custom-input::placeholder {
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+/* MIGRATION TOOLS STRIP */
+.migration-strip {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  padding: 40px 40px;
+  max-width: 100%;
+}
+
+.migration-strip-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.migration-strip-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.migration-tools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .migration-tools { grid-template-columns: 1fr; }
+}
+
+.migration-tool {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.migration-tool-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  padding-top: 2px;
+}
+
+.migration-tool-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.migration-tool-desc strong {
+  color: var(--white);
+  font-weight: 600;
+}
+
 .calc-footnote {
   font-size: 11px;
   color: var(--muted);
@@ -1622,7 +1720,11 @@ footer a:hover { color: var(--accent); }
             <button class="calc-btn active" data-val="30">Daily</button>
             <button class="calc-btn" data-val="150">Multiple / day</button>
           </div>
-          <div class="btn-hint" id="freq-hint">~30 queries / month</div>
+          <div class="freq-custom-row">
+            <span class="btn-hint" id="freq-hint">~30 queries / month</span>
+            <span class="freq-custom-label">or exact number:</span>
+            <input type="number" id="freq-custom" class="freq-custom-input" min="1" max="10000" placeholder="e.g. 300">
+          </div>
         </div>
 
         <div class="calc-field">
@@ -1718,6 +1820,30 @@ footer a:hover { color: var(--accent); }
           Based on AWS S3 Standard ($0.023/GB/mo), Athena ($5/TB scanned), PFC ~9% compression ratio. *Same-region access assumed; internet egress applies at $0.09/GB.
         </p>
 
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MIGRATION TOOLS -->
+<div class="migration-strip">
+  <div class="migration-strip-inner">
+    <div class="migration-strip-label">Already have archives? No problem.</div>
+    <div class="migration-tools">
+      <div class="migration-tool">
+        <div class="migration-tool-name">pfc-migrate</div>
+        <div class="migration-tool-desc">
+          <strong>Convert existing gzip, zstd or bz2 archives directly on S3, Azure or GCS.</strong>
+          In-region conversion — no re-download, no egress cost. One command, lossless, MD5-verified.
+          Parquet migration coming soon.
+        </div>
+      </div>
+      <div class="migration-tool">
+        <div class="migration-tool-name">pfc-convert</div>
+        <div class="migration-tool-desc">
+          <strong>Turn legacy log formats into modern JSONL before compression.</strong>
+          Apache, Nginx, Syslog and custom formats — normalized and ready for PFC in one step.
+        </div>
       </div>
     </div>
   </div>
@@ -2071,8 +2197,20 @@ function copyCode(id) {
 
   setupBtnGroup('freq-group', function(val) {
     freqVal = val;
-    document.getElementById('freq-hint').textContent = freqHints[val] || '';
+    document.getElementById('freq-hint').textContent = freqHints[val] || '~' + val + ' queries / month';
+    document.getElementById('freq-custom').value = '';
     calcUpdate();
+  });
+
+  var freqCustom = document.getElementById('freq-custom');
+  freqCustom.addEventListener('input', function() {
+    var v = parseInt(this.value);
+    if (v && v > 0) {
+      freqVal = v;
+      document.querySelectorAll('#freq-group .calc-btn').forEach(function(b) { b.classList.remove('active'); });
+      document.getElementById('freq-hint').textContent = '~' + v + ' queries / month';
+      calcUpdate();
+    }
   });
 
   setupBtnGroup('scope-group', function(val) {

@@ -1,0 +1,1921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PFC-JSONL v5.6.5 — Benchmark Report</title>
+<style>
+  :root {
+    --bg:        #0d1117;
+    --bg2:       #161b22;
+    --bg3:       #21262d;
+    --border:    #30363d;
+    --text:      #e6edf3;
+    --muted:     #8b949e;
+    --pfc:       #3fb950;
+    --pfc-dim:   #1a4a24;
+    --gzip:      #d29922;
+    --gzip-dim:  #4a3800;
+    --zstd:      #58a6ff;
+    --zstd-dim:  #0d2d5e;
+    --accent:    #f78166;
+    --tag-bg:    #21262d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 0 0 60px;
+  }
+
+  /* ── Header ── */
+  .site-header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 40px 48px 36px;
+  }
+  .header-inner { max-width: 1100px; margin: 0 auto; }
+  .brand {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 18px;
+  }
+  .brand-logo {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--pfc), #1a8c3a);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 20px; color: #fff; letter-spacing: -1px;
+  }
+  .brand-name { font-size: 22px; font-weight: 700; }
+  .brand-version {
+    font-size: 13px; color: var(--pfc); background: var(--pfc-dim);
+    padding: 2px 10px; border-radius: 20px; font-weight: 600;
+  }
+  h1 { font-size: 32px; font-weight: 800; margin-bottom: 10px; }
+  h1 span { color: var(--pfc); }
+  .subtitle { color: var(--muted); font-size: 16px; max-width: 640px; }
+  .meta-row {
+    display: flex; gap: 24px; margin-top: 20px; flex-wrap: wrap;
+  }
+  .meta-item { font-size: 13px; color: var(--muted); }
+  .meta-item strong { color: var(--text); }
+
+  /* ── Main layout ── */
+  .main { max-width: 1100px; margin: 0 auto; padding: 0 48px; }
+
+  /* ── Section headings ── */
+  .section-title {
+    font-size: 20px; font-weight: 700;
+    margin: 48px 0 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title .num {
+    background: var(--pfc); color: #000;
+    width: 28px; height: 28px; border-radius: 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800;
+  }
+
+  /* ── Key stats bar ── */
+  .key-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    margin: 32px 0;
+  }
+  .stat-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 22px;
+  }
+  .stat-card.highlight { border-color: var(--pfc); }
+  .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 800; line-height: 1.1; }
+  .stat-value.green { color: var(--pfc); }
+  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* ── Log type badge ── */
+  .log-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 14px;
+    font-size: 13px; color: var(--muted); margin-bottom: 20px;
+  }
+  .log-badge strong { color: var(--text); }
+
+  /* ── Benchmark cards ── */
+  .bench-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    margin-bottom: 24px;
+  }
+  .bench-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px;
+  }
+  .bench-card h3 {
+    font-size: 14px; color: var(--muted); text-transform: uppercase;
+    letter-spacing: .6px; margin-bottom: 18px;
+  }
+
+  /* ── Bar chart ── */
+  .bar-group { margin-bottom: 14px; }
+  .bar-label {
+    display: flex; justify-content: space-between;
+    font-size: 13px; margin-bottom: 5px;
+  }
+  .bar-label .tool { font-weight: 600; }
+  .bar-label .val { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .bar-track {
+    height: 10px; background: var(--bg3); border-radius: 5px; overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%; border-radius: 5px;
+    transition: width .4s ease;
+  }
+  .bar-fill.pfc  { background: var(--pfc); }
+  .bar-fill.gzip { background: var(--gzip); }
+  .bar-fill.zstd { background: var(--zstd); }
+
+  /* For ratio: lower = better, so PFC bar = smaller = better */
+  /* Winner label */
+  .winner { color: var(--pfc); font-size: 11px; font-weight: 700; margin-left: 6px; }
+
+  /* ── Full results table ── */
+  .results-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin: 20px 0;
+  }
+  .results-table th {
+    text-align: left; padding: 10px 16px;
+    background: var(--bg3); color: var(--muted);
+    font-size: 12px; text-transform: uppercase; letter-spacing: .5px;
+    border-bottom: 1px solid var(--border);
+  }
+  .results-table th:first-child { border-radius: 8px 0 0 0; }
+  .results-table th:last-child  { border-radius: 0 8px 0 0; }
+  .results-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+  }
+  .results-table tr.pfc-row td { background: rgba(63,185,80,.06); }
+  .results-table tr.pfc-row td:first-child {
+    border-left: 3px solid var(--pfc);
+    font-weight: 700; color: var(--pfc);
+  }
+  .results-table tr.gzip-row td:first-child { border-left: 3px solid var(--gzip); }
+  .results-table tr.zstd-row td:first-child { border-left: 3px solid var(--zstd); }
+  .best { color: var(--pfc); font-weight: 700; }
+  .badge-win {
+    background: var(--pfc-dim); color: var(--pfc);
+    font-size: 10px; font-weight: 700; padding: 1px 6px;
+    border-radius: 4px; margin-left: 6px; text-transform: uppercase;
+  }
+
+  /* ── Takeaway box ── */
+  .takeaway {
+    background: var(--bg2); border: 1px solid var(--pfc);
+    border-radius: 12px; padding: 20px 24px; margin: 24px 0;
+    display: flex; gap: 16px;
+  }
+  .takeaway-icon { font-size: 24px; flex-shrink: 0; }
+  .takeaway-text { font-size: 14px; color: var(--muted); }
+  .takeaway-text strong { color: var(--text); display: block; font-size: 15px; margin-bottom: 6px; }
+
+  /* ── DuckDB result ── */
+  .duckdb-row {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 24px; margin: 16px 0;
+    display: flex; align-items: center; gap: 20px;
+  }
+  .duckdb-badge {
+    background: #f5a623; color: #000;
+    font-size: 12px; font-weight: 800; padding: 4px 12px;
+    border-radius: 6px; white-space: nowrap;
+  }
+  .duckdb-info { font-size: 14px; }
+  .duckdb-info strong { color: var(--pfc); }
+  .duckdb-info span { color: var(--muted); }
+
+  /* ── Methodology ── */
+  .method-grid {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 16px;
+    margin: 20px 0;
+  }
+  .method-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 20px; font-size: 13px;
+  }
+  .method-card h4 { color: var(--text); font-size: 14px; margin-bottom: 8px; }
+  .method-card p { color: var(--muted); }
+
+  /* ── Footer ── */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 28px 48px; margin-top: 60px;
+    display: flex; justify-content: space-between; align-items: center;
+    color: var(--muted); font-size: 13px;
+    max-width: 1100px; margin: 60px auto 0;
+  }
+  .footer a { color: var(--pfc); text-decoration: none; }
+
+  /* ── Responsive ── */
+  @media (max-width: 760px) {
+    .site-header { padding: 24px 20px; }
+    .main { padding: 0 20px; }
+    .bench-grid, .key-stats, .method-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── Cold Storage Section ── */
+  .cold-hero {
+    background: linear-gradient(135deg, #0d1f12 0%, #0d1117 60%, #0a1a2e 100%);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px 44px;
+    margin: 40px 0 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cold-hero::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--pfc), var(--zstd), var(--pfc));
+  }
+  .cold-hero-eyebrow {
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--pfc); font-weight: 700; margin-bottom: 14px;
+  }
+  .cold-hero h2 {
+    font-size: 28px; font-weight: 800; line-height: 1.25;
+    margin-bottom: 14px;
+  }
+  .cold-hero h2 em { color: var(--pfc); font-style: normal; }
+  .cold-hero-sub {
+    font-size: 15px; color: var(--muted); max-width: 680px; line-height: 1.7;
+    margin-bottom: 36px;
+  }
+  .cold-hero-sub strong { color: var(--text); }
+
+  /* tier comparison table */
+  .tier-table {
+    width: 100%; border-collapse: collapse; font-size: 14px;
+    margin-bottom: 32px;
+  }
+  .tier-table th {
+    text-align: left; padding: 10px 16px;
+    background: rgba(255,255,255,0.04);
+    color: var(--muted); font-size: 11px;
+    text-transform: uppercase; letter-spacing: .6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tier-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(48,54,61,0.6);
+    vertical-align: middle;
+  }
+  .tier-table tr:last-child td { border-bottom: none; }
+  .tier-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-weight: 700; font-size: 14px;
+  }
+  .tier-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .tier-dot.hot  { background: #f85149; box-shadow: 0 0 6px #f85149; }
+  .tier-dot.warm { background: var(--gzip); box-shadow: 0 0 6px var(--gzip); }
+  .tier-dot.cold { background: var(--muted); }
+  .tier-dot.pfc  { background: var(--pfc); box-shadow: 0 0 6px var(--pfc); }
+  .tier-table tr.row-pfc { background: rgba(63,185,80,0.06); }
+  .tier-table tr.row-pfc td:first-child { border-left: 3px solid var(--pfc); }
+  .tier-table tr.row-hot  td:first-child { border-left: 3px solid #f85149; }
+  .tier-table tr.row-warm td:first-child { border-left: 3px solid var(--gzip); }
+  .tier-table tr.row-cold td:first-child { border-left: 3px solid var(--muted); }
+  .check-yes { color: var(--pfc); font-weight: 700; }
+  .check-no  { color: var(--muted); }
+  .check-partial { color: var(--gzip); }
+  .cost-strike { text-decoration: line-through; color: var(--muted); font-size: 12px; }
+  .cost-new { color: var(--pfc); font-weight: 700; }
+  .tier-note { font-size: 12px; color: var(--muted); margin-left: 4px; }
+
+  /* savings callout */
+  .savings-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    margin: 24px 0 0;
+  }
+  .savings-card {
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 22px;
+  }
+  .savings-card.featured {
+    border-color: var(--pfc);
+    background: rgba(63,185,80,0.06);
+  }
+  .savings-card .sc-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
+    color: var(--muted); margin-bottom: 8px;
+  }
+  .savings-card .sc-value {
+    font-size: 26px; font-weight: 800; line-height: 1.1; margin-bottom: 4px;
+  }
+  .savings-card .sc-value.green { color: var(--pfc); }
+  .savings-card .sc-value.red   { color: #f85149; }
+  .savings-card .sc-sub {
+    font-size: 12px; color: var(--muted);
+  }
+
+  /* ── Status ribbon ── */
+  .status-ribbon {
+    background: var(--pfc-dim); border-bottom: 1px solid var(--pfc);
+    padding: 8px 48px; font-size: 13px; color: var(--pfc);
+    text-align: center; font-weight: 600;
+  }
+
+  /* Progress tracker */
+  .progress-row {
+    display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0;
+  }
+  .prog-item {
+    padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--border);
+  }
+  .prog-item.done { background: var(--pfc-dim); color: var(--pfc); border-color: var(--pfc); }
+  .prog-item.pending { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="status-ribbon">
+  ✅ Benchmark Suite Complete — v5.6.5 · All 10 log types measured · Verified 2026-05-15
+</div>
+
+<!-- ── HEADER ── -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-logo">PF</div>
+      <span class="brand-name">PFC-JSONL</span>
+      <span class="brand-version">v5.6.5</span>
+    </div>
+    <h1>Benchmark Report — <span>Real-World Log Compression</span></h1>
+    <p class="subtitle">
+      Comprehensive compression benchmarks across 10 enterprise log categories.
+      Measured against gzip-9 and zstd-3 — the two most common alternatives in production.
+    </p>
+    <div class="meta-row">
+      <div class="meta-item"><strong>Date:</strong> 2026-05-12</div>
+      <div class="meta-item"><strong>Server:</strong> Linux VPS · 6-Core · 12 GB RAM</div>
+      <div class="meta-item"><strong>Block size:</strong> 32 MiB · 6 Workers</div>
+      <div class="meta-item"><strong>Test files:</strong> 1 GB per log type · synthetic realistic</div>
+      <div class="meta-item"><strong>Roundtrip:</strong> Verified IDENTICAL on all runs</div>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- ── PROGRESS ── -->
+  <div class="section-title" style="margin-top:36px;">
+    <span class="num">✓</span> Test Progress
+  </div>
+  <div class="progress-row">
+    <span class="prog-item done">01 · API Access Logs ✓</span>
+    <span class="prog-item done">02 · Kubernetes / Container ✓</span>
+    <span class="prog-item done">03 · Application Logs ✓</span>
+    <span class="prog-item done">04 · Auth / Security ✓</span>
+    <span class="prog-item done">05 · Infrastructure / System ✓</span>
+    <span class="prog-item done">06 · Streaming Pipeline ✓</span>
+    <span class="prog-item done">07 · Operations / CI/CD ✓</span>
+    <span class="prog-item done">08 · Cloud Provider ✓</span>
+    <span class="prog-item done">09 · Network / Firewall ✓</span>
+    <span class="prog-item done">10 · E-Commerce / Transactions ✓</span>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- COLD STORAGE VALUE PROPOSITION                        -->
+  <!-- ══════════════════════════════════════════════════════ -->
+
+  <div class="cold-hero">
+    <div class="cold-hero-eyebrow">The Storage Cost Problem — Solved</div>
+    <h2>Cold Storage That Queries<br>Like <em>Hot Storage</em>.</h2>
+    <p class="cold-hero-sub">
+      Today, engineering teams keep logs on expensive hot/warm infrastructure for weeks — not because they query them daily,
+      but because they <strong>might need to</strong>. Cold storage was never queryable.
+      PFC-JSONL changes that: ship logs to cheap S3 on day one,
+      query any 1-hour window in under 6 seconds. The warm tier becomes unnecessary.
+    </p>
+
+    <!-- Tier comparison table -->
+    <table class="tier-table">
+      <thead>
+        <tr>
+          <th>Storage Tier</th>
+          <th>Typical Tools</th>
+          <th>Cost / TB / month</th>
+          <th>Queryable?</th>
+          <th>Time-Range Query</th>
+          <th>Ideal Retention</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-hot">
+          <td><span class="tier-label"><span class="tier-dot hot"></span>Hot</span></td>
+          <td>Elasticsearch, Datadog, Loki, Splunk</td>
+          <td style="color:#f85149; font-weight:700;">$20 – $50</td>
+          <td><span class="check-yes">✓ Yes</span> <span class="tier-note">real-time</span></td>
+          <td><span class="check-yes">< 1 second</span></td>
+          <td>Last 0 – 3 days</td>
+        </tr>
+        <tr class="row-warm">
+          <td><span class="tier-label"><span class="tier-dot warm"></span>Warm</span></td>
+          <td>Cheaper ES tier, S3 + custom index</td>
+          <td style="color:var(--gzip); font-weight:700;">$8 – $15</td>
+          <td><span class="check-partial">~ Partial</span></td>
+          <td><span class="check-partial">seconds – minutes</span></td>
+          <td>Days 3 – 30 <span class="tier-note">(often kept too long)</span></td>
+        </tr>
+        <tr class="row-cold">
+          <td><span class="tier-label"><span class="tier-dot cold"></span>Cold (traditional)</span></td>
+          <td>S3 Glacier, gzip/zstd archives</td>
+          <td style="color:var(--muted); font-weight:700;">$2 – $4</td>
+          <td><span class="check-no">✗ No</span> <span class="tier-note">full decompress needed</span></td>
+          <td><span class="check-no">minutes – hours</span></td>
+          <td>Days 30+ <span class="tier-note">(only for compliance)</span></td>
+        </tr>
+        <tr class="row-pfc">
+          <td><span class="tier-label"><span class="tier-dot pfc"></span>PFC Cold</span><br>
+              <span style="font-size:11px;color:var(--pfc);font-weight:600;">pfc-jsonl + DuckDB</span></td>
+          <td>S3 Standard / S3 IA</td>
+          <td><span class="cost-new">$2 – $4</span> <span class="tier-note">cold price</span></td>
+          <td><span class="check-yes">✓ Full SQL</span> <span class="tier-note">via DuckDB</span></td>
+          <td><span class="check-yes">3 – 6 seconds</span> <span class="tier-note">per 1h window / 1 GB file</span></td>
+          <td><span style="color:var(--pfc);font-weight:700;">Day 1 onwards</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Impact callout cards -->
+    <div class="savings-row">
+      <div class="savings-card">
+        <div class="sc-label">Traditional: 30-day hot retention</div>
+        <div class="sc-value red">$9,000</div>
+        <div class="sc-sub">per month · 10 TB/month · Elasticsearch pricing</div>
+      </div>
+      <div class="savings-card">
+        <div class="sc-label">With PFC: 3 days hot + rest PFC Cold</div>
+        <div class="sc-value" style="color:var(--gzip);">$1,030</div>
+        <div class="sc-sub">$900 hot (3 days) + $130 PFC S3-IA (27 days)</div>
+      </div>
+      <div class="savings-card featured">
+        <div class="sc-label">Monthly savings — same query capability</div>
+        <div class="sc-value green">~$8,000</div>
+        <div class="sc-sub">≈ 89% cost reduction · no tooling changes · full SQL via DuckDB</div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px; padding:18px 22px; background:rgba(63,185,80,0.08); border:1px solid var(--pfc); border-radius:10px;">
+      <p style="font-size:14px; color:var(--text); line-height:1.7;">
+        <strong style="color:var(--pfc);">What this means for your team:</strong>
+        Compress logs to PFC on day one. Store directly on S3.
+        When an incident surfaces three weeks later, run the same DuckDB query
+        your SREs already know — <code style="background:var(--bg3);padding:1px 6px;border-radius:4px;font-size:13px;">read_pfc_jsonl()</code> — and get results in seconds.
+        No re-hydration. No waiting. No $40/TB Elasticsearch bill for data you check twice a year.
+        <br><br>
+        <strong style="color:var(--text);">Compatible with Fluent Bit, Vector, Kafka, OpenTelemetry, Telegraf, Grafana,
+        and all five major time-series databases.</strong>
+        Fits into existing pipelines without infrastructure changes.
+      </p>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- LOG TYPE 01: API ACCESS LOGS                          -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-title">
+    <span class="num">1</span> API Access Logs
+  </div>
+
+  <div class="log-badge">
+    <strong>Sources:</strong> nginx · Caddy · AWS ALB · Cloudflare · SaaS backends
+    &nbsp;|&nbsp;
+    <strong>File:</strong> 01_api_access_logs_1gb.jsonl · 1.00 GB · ~4.5M lines
+  </div>
+
+  <!-- Key stats -->
+  <div class="key-stats">
+    <div class="stat-card highlight">
+      <div class="stat-label">PFC-JSONL Ratio</div>
+      <div class="stat-value green">12.76%</div>
+      <div class="stat-sub">of original size</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs gzip-9</div>
+      <div class="stat-value">28% smaller</div>
+      <div class="stat-sub">gzip-9: 17.82%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs zstd-3</div>
+      <div class="stat-value">33% smaller</div>
+      <div class="stat-sub">zstd-3: 19.02%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Compress Speed</div>
+      <div class="stat-value">40.1 MB/s</div>
+      <div class="stat-sub">3.8× faster than gzip-9</div>
+    </div>
+  </div>
+
+  <!-- Bar charts -->
+  <div class="bench-grid">
+
+    <div class="bench-card">
+      <h3>Compression Ratio — lower is better</h3>
+
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4 <span class="winner">BEST</span></span>
+          <span class="val">12.76%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:67%"></div></div>
+      </div>
+
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">17.82%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:94%"></div></div>
+      </div>
+
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3</span>
+          <span class="val">19.02%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+    </div>
+
+    <div class="bench-card">
+      <h3>Compress Speed — higher is better</h3>
+
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3 <span class="winner" style="color:var(--zstd)">FASTEST</span></span>
+          <span class="val">113.2 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4</span>
+          <span class="val">40.1 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:35%"></div></div>
+      </div>
+
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">10.5 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:9%"></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Full table -->
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Tool</th><th>Ratio</th><th>Output Size</th>
+        <th>Compress</th><th>Wall-Clock</th><th>Decompress</th><th>Query Support</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="pfc-row">
+        <td>PFC-JSONL v5.6.4 <span class="badge-win">best ratio</span></td>
+        <td class="best">12.76%</td><td>130 MB</td>
+        <td>40.1 MB/s</td><td class="best">25.5s</td><td>45.7 MB/s</td>
+        <td>✅ Time-range BIDX</td>
+      </tr>
+      <tr class="gzip-row">
+        <td>gzip -9</td><td>17.82%</td><td>183 MB</td>
+        <td>10.5 MB/s</td><td>99.3s</td><td>151.1 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+      <tr class="zstd-row">
+        <td>zstd -3</td><td>19.02%</td><td>195 MB</td>
+        <td>113.2 MB/s</td><td>10.1s</td><td>468.6 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:20px;padding:0 4px;">⚡ PFC runs <strong style="color:var(--text)">6 parallel workers</strong> (~2.2 GB RAM / ~380 MB per worker) — gzip and zstd run <strong style="color:var(--text)">single-threaded</strong>. Wall-clock times reflect real user wait time.</p>
+
+  <!-- DuckDB -->
+  <div class="duckdb-row">
+    <div class="duckdb-badge">DuckDB Extension</div>
+    <div class="duckdb-info">
+      Time-range query (1h window / 32-block file): <strong>5.3 s — 183,726 rows</strong>
+      <span> — BIDX reads 1 of 32 blocks only. gzip full scan: ~99s. zstd full scan: ~10s. PFC is the only format with block-level random access.</span>
+    </div>
+  </div>
+
+  <!-- Takeaway -->
+  <div class="takeaway">
+  <div class="takeaway-icon">💡</div>
+  <div class="takeaway-text">
+    <strong>API Access Logs: The highest-volume log type — and PFC handles it.</strong>
+    At 12.76% ratio, a 30-day archive of 1 GB/day costs just 3.8 GB on S3 instead of 5.4 GB with zstd-3.
+    When a customer reports a 429 or a spike in 500s from last Tuesday, DuckDB returns the relevant
+    hour in 5.3 seconds — without downloading or decompressing the full archive.
+    For SaaS teams running nginx, Caddy, or AWS ALB: this is the log type you produce the most of,
+    store the longest, and query the least — until something breaks.
+  </div>
+</div>
+
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- PLACEHOLDER: LOG TYPES 02–10 (added as tests run)    -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- LOG TYPE 02: KUBERNETES / CONTAINER LOGS             -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-title">
+    <span class="num">2</span> Kubernetes / Container Logs
+  </div>
+
+  <div class="log-badge">
+    <strong>Sources:</strong> k8s pods · Docker · containerd · kubectl logs
+    &nbsp;|&nbsp;
+    <strong>File:</strong> 02_kubernetes_container_logs_1gb.jsonl · 1.00 GB · ~5.5M lines
+  </div>
+
+  <div class="key-stats">
+    <div class="stat-card highlight">
+      <div class="stat-label">PFC-JSONL Ratio</div>
+      <div class="stat-value green">7.97%</div>
+      <div class="stat-sub">of original size</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs gzip-9</div>
+      <div class="stat-value">33% smaller</div>
+      <div class="stat-sub">gzip-9: 11.85%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs zstd-3</div>
+      <div class="stat-value">43% smaller</div>
+      <div class="stat-sub">zstd-3: 13.93%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Compress Speed</div>
+      <div class="stat-value">53.8 MB/s</div>
+      <div class="stat-sub">3.6× faster than gzip-9</div>
+    </div>
+  </div>
+
+  <div class="bench-grid">
+    <div class="bench-card">
+      <h3>Compression Ratio — lower is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4 <span class="winner">BEST</span></span>
+          <span class="val">7.97%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:57%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">11.85%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:85%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3</span>
+          <span class="val">13.93%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+    </div>
+
+    <div class="bench-card">
+      <h3>Compress Speed — higher is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3 <span class="winner" style="color:var(--zstd)">FASTEST</span></span>
+          <span class="val">162.9 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4</span>
+          <span class="val">53.8 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:33%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">16.2 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:10%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Tool</th><th>Ratio</th><th>Output Size</th>
+        <th>Compress</th><th>Wall-Clock</th><th>Decompress</th><th>Query Support</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="pfc-row">
+        <td>PFC-JSONL v5.6.4 <span class="badge-win">best ratio</span></td>
+        <td class="best">7.97%</td><td>81 MB</td>
+        <td>53.8 MB/s</td><td class="best">19.0s</td><td>49.9 MB/s</td>
+        <td>✅ Time-range BIDX</td>
+      </tr>
+      <tr class="gzip-row">
+        <td>gzip -9</td><td>11.85%</td><td>122 MB</td>
+        <td>16.2 MB/s</td><td>71.8s</td><td>201.1 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+      <tr class="zstd-row">
+        <td>zstd -3</td><td>13.93%</td><td>143 MB</td>
+        <td>162.9 MB/s</td><td>8.5s</td><td>513.0 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:20px;padding:0 4px;">⚡ PFC runs <strong style="color:var(--text)">6 parallel workers</strong> (~2 GB RAM total) — gzip and zstd run <strong style="color:var(--text)">single-threaded</strong>. Wall-clock times reflect real user wait time.</p>
+
+  <div class="duckdb-row">
+    <div class="duckdb-badge">DuckDB Extension</div>
+    <div class="duckdb-info">
+      Time-range query (1h window / 30-day dataset): <strong>4.3 s — 175,837 rows</strong>
+      <span> — BIDX skips almost all blocks. gzip/zstd require full decompression before any query.</span>
+    </div>
+  </div>
+
+  <div class="takeaway">
+  <div class="takeaway-icon">💡</div>
+  <div class="takeaway-text">
+    <strong>Kubernetes Logs: 43% smaller than zstd-3 — the format Loki and Promtail use by default.</strong>
+    Repetitive pod states (Running, Pending, Failed), service names, and namespace strings make
+    Kubernetes logs exceptionally well-suited for PFC. At 7.97%, a 100-node cluster generating 50 GB/day
+    stores 4 GB compressed instead of 7 GB with zstd-3.
+    Pod crash investigations — "what was this container doing at 03:14?" — return in 4.3 seconds.
+    Move K8s logs to S3 IA on day one and cut your observability storage bill by up to 43%.
+  </div>
+</div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- LOG TYPE 03: APPLICATION LOGS                         -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-title">
+    <span class="num">3</span> Application Logs
+  </div>
+
+  <div class="log-badge">
+    <strong>Sources:</strong> Spring Boot · Node.js (winston/bunyan) · Python (structlog) · Java (logback)
+    &nbsp;|&nbsp;
+    <strong>File:</strong> 03_application_logs_1gb.jsonl · 1.00 GB · ~5M lines
+  </div>
+
+  <div class="key-stats">
+    <div class="stat-card highlight">
+      <div class="stat-label">PFC-JSONL Ratio</div>
+      <div class="stat-value green">10.56%</div>
+      <div class="stat-sub">of original size</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs gzip-9</div>
+      <div class="stat-value">28% smaller</div>
+      <div class="stat-sub">gzip-9: 14.68%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs zstd-3</div>
+      <div class="stat-value">35% smaller</div>
+      <div class="stat-sub">zstd-3: 16.41%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Compress Speed</div>
+      <div class="stat-value">44.7 MB/s</div>
+      <div class="stat-sub">3.2× faster than gzip-9</div>
+    </div>
+  </div>
+
+  <div class="bench-grid">
+    <div class="bench-card">
+      <h3>Compression Ratio — lower is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4 <span class="winner">BEST</span></span>
+          <span class="val">10.56%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:65%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">14.68%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:89%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3</span>
+          <span class="val">16.41%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+    </div>
+
+    <div class="bench-card">
+      <h3>Compress Speed — higher is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3 <span class="winner" style="color:var(--zstd)">FASTEST</span></span>
+          <span class="val">104.2 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4</span>
+          <span class="val">44.7 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:43%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">14.1 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:14%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Tool</th><th>Ratio</th><th>Output Size</th>
+        <th>Compress</th><th>Wall-Clock</th><th>Decompress</th><th>Query Support</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="pfc-row">
+        <td>PFC-JSONL v5.6.4 <span class="badge-win">best ratio</span></td>
+        <td class="best">10.56%</td><td>108 MB</td>
+        <td>44.7 MB/s</td><td class="best">22.9s</td><td>49.7 MB/s</td>
+        <td>✅ Time-range BIDX</td>
+      </tr>
+      <tr class="gzip-row">
+        <td>gzip -9</td><td>14.68%</td><td>151 MB</td>
+        <td>14.1 MB/s</td><td>75.0s</td><td>141.1 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+      <tr class="zstd-row">
+        <td>zstd -3</td><td>16.41%</td><td>169 MB</td>
+        <td>104.2 MB/s</td><td>10.1s</td><td>552.6 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:20px;padding:0 4px;">⚡ PFC runs <strong style="color:var(--text)">6 parallel workers</strong> (~2 GB RAM total) — gzip and zstd run <strong style="color:var(--text)">single-threaded</strong>. Wall-clock times reflect real user wait time.</p>
+
+  <div class="duckdb-row">
+    <div class="duckdb-badge">DuckDB Extension</div>
+    <div class="duckdb-info">
+      Time-range query (1h window / 30-day dataset): <strong>3.9 s — 159,403 rows</strong>
+      <span> — BIDX filters to 1-2 of 32 blocks. No full decompression needed.</span>
+    </div>
+  </div>
+
+  <div class="takeaway">
+  <div class="takeaway-icon">💡</div>
+  <div class="takeaway-text">
+    <strong>Application Logs: Structured logs from your services, queryable across weeks — not hours.</strong>
+    Spring Boot, Node.js structlog, Python logging, Go zap — all produce consistent field sets
+    that PFC compresses to 10.56%, 35% smaller than zstd-3. A trace_id correlation across multiple
+    services from three days ago returns in under 4 seconds, without re-hydrating anything to Elasticsearch.
+    Teams running on 7–14 day hot retention keep logs warm purely because queries would be too slow otherwise.
+    With PFC Cold, that window shrinks to hours.
+  </div>
+</div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- LOG TYPE 04: AUTH / SECURITY LOGS                    -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-title">
+    <span class="num">4</span> Auth / Security Logs
+  </div>
+
+  <div class="log-badge">
+    <strong>Sources:</strong> OAuth providers · Keycloak · WAF · fail2ban · SSO gateways · API key auth
+    &nbsp;|&nbsp;
+    <strong>File:</strong> 04_auth_security_logs_1gb.jsonl · 1.00 GB · ~4.8M lines
+  </div>
+
+  <div class="key-stats">
+    <div class="stat-card highlight">
+      <div class="stat-label">PFC-JSONL Ratio</div>
+      <div class="stat-value green">9.13%</div>
+      <div class="stat-sub">of original size</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs gzip-9</div>
+      <div class="stat-value">31% smaller</div>
+      <div class="stat-sub">gzip-9: 13.34%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs zstd-3</div>
+      <div class="stat-value">39% smaller</div>
+      <div class="stat-sub">zstd-3: 15.12%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Compress Speed</div>
+      <div class="stat-value">51.2 MB/s</div>
+      <div class="stat-sub">3.3× faster than gzip-9</div>
+    </div>
+  </div>
+
+  <div class="bench-grid">
+    <div class="bench-card">
+      <h3>Compression Ratio — lower is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4 <span class="winner">BEST</span></span>
+          <span class="val">9.13%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:61%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">13.34%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:88%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3</span>
+          <span class="val">15.12%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+    </div>
+    <div class="bench-card">
+      <h3>Compress Speed — higher is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3 <span class="winner" style="color:var(--zstd)">FASTEST</span></span>
+          <span class="val">161.7 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4</span>
+          <span class="val">51.2 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:32%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">14.2 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:9%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Tool</th><th>Ratio</th><th>Output Size</th>
+        <th>Compress</th><th>Wall-Clock</th><th>Decompress</th><th>Query Support</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="pfc-row">
+        <td>PFC-JSONL v5.6.4 <span class="badge-win">best ratio</span></td>
+        <td class="best">9.13%</td><td>93 MB</td>
+        <td>51.2 MB/s</td><td class="best">20.0s</td><td>54.7 MB/s</td>
+        <td>✅ Time-range BIDX</td>
+      </tr>
+      <tr class="gzip-row">
+        <td>gzip -9</td><td>13.34%</td><td>137 MB</td>
+        <td>14.2 MB/s</td><td>78.4s</td><td>181.6 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+      <tr class="zstd-row">
+        <td>zstd -3</td><td>15.12%</td><td>154 MB</td>
+        <td>161.7 MB/s</td><td>10.1s</td><td>558.9 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:20px;padding:0 4px;">⚡ PFC runs <strong style="color:var(--text)">6 parallel workers</strong> (~2 GB RAM total) — gzip and zstd run <strong style="color:var(--text)">single-threaded</strong>. Wall-clock times reflect real user wait time.</p>
+
+  <div class="duckdb-row">
+    <div class="duckdb-badge">DuckDB Extension</div>
+    <div class="duckdb-info">
+      Time-range query (1h window / 30-day dataset): <strong>3.3 s — 77,162 rows</strong>
+      <span> — BIDX filters to 1 of 32 blocks. No full decompression needed.</span>
+    </div>
+  </div>
+
+  <div class="takeaway">
+  <div class="takeaway-icon">💡</div>
+  <div class="takeaway-text">
+    <strong>Auth &amp; Security Logs: Compliance keeps them for 90–365 days. Now they stay queryable the whole time.</strong>
+    Authentication events, failed logins, privilege escalations — at 9.13% ratio, a year of security
+    logs fits in a fraction of what gzip needs. The real win: when a security incident is discovered
+    six weeks after it happened, DuckDB finds the offending user_id or source IP in 3.3 seconds
+    from cold storage, without paying for hot-tier retention.
+    Audit trail queries that used to require a multi-hour Elasticsearch restore now run on S3 IA directly.
+  </div>
+</div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- LOG TYPE 05: INFRASTRUCTURE / SYSTEM LOGS            -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-title">
+    <span class="num">5</span> Infrastructure / System Logs
+  </div>
+
+  <div class="log-badge">
+    <strong>Sources:</strong> systemd · syslog · cloud-init · kernel · node-exporter · auditd · cron
+    &nbsp;|&nbsp;
+    <strong>File:</strong> 05_infrastructure_system_logs_1gb.jsonl · 1.00 GB · ~5M lines
+  </div>
+
+  <div class="key-stats">
+    <div class="stat-card highlight">
+      <div class="stat-label">PFC-JSONL Ratio</div>
+      <div class="stat-value green">5.31%</div>
+      <div class="stat-sub">best result in suite 🏆</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs gzip-9</div>
+      <div class="stat-value">46% smaller</div>
+      <div class="stat-sub">gzip-9: 9.82%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs zstd-3</div>
+      <div class="stat-value">57% smaller</div>
+      <div class="stat-sub">zstd-3: 12.52%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Compress Speed</div>
+      <div class="stat-value">61.3 MB/s</div>
+      <div class="stat-sub">3.3× faster than gzip-9</div>
+    </div>
+  </div>
+
+  <div class="bench-grid">
+    <div class="bench-card">
+      <h3>Compression Ratio — lower is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4 <span class="winner">BEST 🏆</span></span>
+          <span class="val">5.31%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:43%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">9.82%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:78%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3</span>
+          <span class="val">12.52%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+    </div>
+    <div class="bench-card">
+      <h3>Compress Speed — higher is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3 <span class="winner" style="color:var(--zstd)">FASTEST</span></span>
+          <span class="val">183.2 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4</span>
+          <span class="val">61.3 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:33%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">18.4 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:10%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Tool</th><th>Ratio</th><th>Output Size</th>
+        <th>Compress</th><th>Wall-Clock</th><th>Decompress</th><th>Query Support</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="pfc-row">
+        <td>PFC-JSONL v5.6.4 <span class="badge-win">best ratio 🏆</span></td>
+        <td class="best">5.31%</td><td>54 MB</td>
+        <td>61.3 MB/s</td><td class="best">16.7s</td><td>62.4 MB/s</td>
+        <td>✅ Time-range BIDX</td>
+      </tr>
+      <tr class="gzip-row">
+        <td>gzip -9</td><td>9.82%</td><td>101 MB</td>
+        <td>18.4 MB/s</td><td>55.6s</td><td>210.6 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+      <tr class="zstd-row">
+        <td>zstd -3</td><td>12.52%</td><td>129 MB</td>
+        <td>183.2 MB/s</td><td>6.1s</td><td>525.5 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:20px;padding:0 4px;">⚡ PFC runs <strong style="color:var(--text)">6 parallel workers</strong> (~2 GB RAM total) — gzip and zstd run <strong style="color:var(--text)">single-threaded</strong>. Wall-clock times reflect real user wait time.</p>
+
+  <div class="duckdb-row">
+    <div class="duckdb-badge">DuckDB Extension</div>
+    <div class="duckdb-info">
+      Time-range query (1h window / 30-day dataset): <strong>2.9 s — 113,385 rows</strong>
+      <span> — BIDX filters to 1 of 32 blocks. No full decompression needed.</span>
+    </div>
+  </div>
+
+  <div class="takeaway">
+  <div class="takeaway-icon">💡</div>
+  <div class="takeaway-text">
+    <strong>Infrastructure Logs: 5.31% — the most compressible log type in the benchmark. 57% smaller than zstd-3.</strong>
+    Syslog, host metrics, daemon events, and process logs share highly repetitive fields:
+    hostname, facility, severity, service name, numeric metrics. PFC's log-aware preprocessing
+    identifies these recurring patterns and encodes them efficiently before BWT — the result is
+    nearly 20× compression on raw data. For ops teams collecting system logs from hundreds of nodes:
+    a full year of infrastructure telemetry compressed with PFC costs less than two months with zstd-3.
+    Query time: 2.9 seconds per hour window.
+  </div>
+</div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- LOG TYPE 06: STREAMING PIPELINE LOGS                 -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-title">
+    <span class="num">6</span> Streaming Pipeline Logs
+  </div>
+
+  <div class="log-badge">
+    <strong>Sources:</strong> Kafka · Fluent Bit · Vector · Logstash · Flink · Spark Streaming
+    &nbsp;|&nbsp;
+    <strong>File:</strong> 06_streaming_pipeline_logs_1gb.jsonl · 1.00 GB · ~5M lines
+  </div>
+
+  <div class="key-stats">
+    <div class="stat-card highlight">
+      <div class="stat-label">PFC-JSONL Ratio</div>
+      <div class="stat-value green">7.49%</div>
+      <div class="stat-sub">of original size</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs gzip-9</div>
+      <div class="stat-value">34% smaller</div>
+      <div class="stat-sub">gzip-9: 11.33%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs zstd-3</div>
+      <div class="stat-value">44% smaller</div>
+      <div class="stat-sub">zstd-3: 13.47%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Compress Speed</div>
+      <div class="stat-value">53.8 MB/s</div>
+      <div class="stat-sub">3.1× faster than gzip-9</div>
+    </div>
+  </div>
+
+  <div class="bench-grid">
+    <div class="bench-card">
+      <h3>Compression Ratio — lower is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4 <span class="winner">BEST</span></span>
+          <span class="val">7.49%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:56%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">11.33%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:84%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3</span>
+          <span class="val">13.47%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+    </div>
+    <div class="bench-card">
+      <h3>Compress Speed — higher is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3 <span class="winner" style="color:var(--zstd)">FASTEST</span></span>
+          <span class="val">120.1 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4</span>
+          <span class="val">53.8 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:45%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">17.3 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:14%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Tool</th><th>Ratio</th><th>Output Size</th>
+        <th>Compress</th><th>Wall-Clock</th><th>Decompress</th><th>Query Support</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="pfc-row">
+        <td>PFC-JSONL v5.6.4 <span class="badge-win">best ratio</span></td>
+        <td class="best">7.49%</td><td>76 MB</td>
+        <td>53.8 MB/s</td><td class="best">19.0s</td><td>59.1 MB/s</td>
+        <td>✅ Time-range BIDX</td>
+      </tr>
+      <tr class="gzip-row">
+        <td>gzip -9</td><td>11.33%</td><td>116 MB</td>
+        <td>17.3 MB/s</td><td>64.8s</td><td>156.3 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+      <tr class="zstd-row">
+        <td>zstd -3</td><td>13.47%</td><td>138 MB</td>
+        <td>120.1 MB/s</td><td>7.0s</td><td>506.9 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:20px;padding:0 4px;">⚡ PFC runs <strong style="color:var(--text)">6 parallel workers</strong> (~2 GB RAM total) — gzip and zstd run <strong style="color:var(--text)">single-threaded</strong>. Wall-clock times reflect real user wait time.</p>
+
+  <div class="duckdb-row">
+    <div class="duckdb-badge">DuckDB Extension</div>
+    <div class="duckdb-info">
+      Time-range query (1h window / 30-day dataset): <strong>3.3 s — 144,267 rows</strong>
+      <span> — BIDX filters to 1-2 of 32 blocks. No full decompression needed.</span>
+    </div>
+  </div>
+
+  <div class="takeaway">
+  <div class="takeaway-icon">💡</div>
+  <div class="takeaway-text">
+    <strong>Streaming Pipeline Logs: Kafka, Fluent Bit, Vector — high-throughput sources that compound fast.</strong>
+    At 7.49%, 34% smaller than gzip-9 and 44% smaller than zstd-3. Streaming pipelines generate
+    large, structured logs — consumer offsets, topic names, partition IDs, lag values — with fields
+    that repeat across millions of events. These archives grow quickly and are rarely queried
+    after the first 24 hours, making them ideal for immediate cold placement on S3.
+    Consumer lag investigations, dead-letter queue analysis, and partition rebalance events
+    are all queryable by timestamp window in 3.3 seconds.
+  </div>
+</div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- LOG TYPE 07: OPERATIONS / CI-CD LOGS                 -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-title">
+    <span class="num">7</span> Operations / CI-CD Logs
+  </div>
+
+  <div class="log-badge">
+    <strong>Sources:</strong> GitHub Actions · GitLab CI · Jenkins · ArgoCD · Terraform · Helm · PagerDuty
+    &nbsp;|&nbsp;
+    <strong>File:</strong> 07_operations_cicd_logs_1gb.jsonl · 1.00 GB · ~4.5M lines
+  </div>
+
+  <div class="key-stats">
+    <div class="stat-card highlight">
+      <div class="stat-label">PFC-JSONL Ratio</div>
+      <div class="stat-value green">6.54%</div>
+      <div class="stat-sub">of original size</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs gzip-9</div>
+      <div class="stat-value">35% smaller</div>
+      <div class="stat-sub">gzip-9: 10.05%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs zstd-3</div>
+      <div class="stat-value">47% smaller</div>
+      <div class="stat-sub">zstd-3: 12.45%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Compress Speed</div>
+      <div class="stat-value">52.7 MB/s</div>
+      <div class="stat-sub">2.9× faster than gzip-9</div>
+    </div>
+  </div>
+
+  <div class="bench-grid">
+    <div class="bench-card">
+      <h3>Compression Ratio — lower is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4 <span class="winner">BEST</span></span>
+          <span class="val">6.54%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:53%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">10.05%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:81%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3</span>
+          <span class="val">12.45%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+    </div>
+    <div class="bench-card">
+      <h3>Compress Speed — higher is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3 <span class="winner" style="color:var(--zstd)">FASTEST</span></span>
+          <span class="val">185.0 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4</span>
+          <span class="val">52.7 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:28%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">17.9 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:10%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Tool</th><th>Ratio</th><th>Output Size</th>
+        <th>Compress</th><th>Wall-Clock</th><th>Decompress</th><th>Query Support</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="pfc-row">
+        <td>PFC-JSONL v5.6.4 <span class="badge-win">best ratio</span></td>
+        <td class="best">6.54%</td><td>66 MB</td>
+        <td>52.7 MB/s</td><td class="best">19.4s</td><td>59.5 MB/s</td>
+        <td>✅ Time-range BIDX</td>
+      </tr>
+      <tr class="gzip-row">
+        <td>gzip -9</td><td>10.05%</td><td>103 MB</td>
+        <td>17.9 MB/s</td><td>59.9s</td><td>201.7 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+      <tr class="zstd-row">
+        <td>zstd -3</td><td>12.45%</td><td>128 MB</td>
+        <td>185.0 MB/s</td><td>8.3s</td><td>548.9 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:20px;padding:0 4px;">⚡ PFC runs <strong style="color:var(--text)">6 parallel workers</strong> (~2 GB RAM total) — gzip and zstd run <strong style="color:var(--text)">single-threaded</strong>. Wall-clock times reflect real user wait time.</p>
+
+  <div class="duckdb-row">
+    <div class="duckdb-badge">DuckDB Extension</div>
+    <div class="duckdb-info">
+      Time-range query (1h window / 30-day dataset): <strong>2.8 s — 92,010 rows</strong>
+      <span> — BIDX filters to 1 of 32 blocks. No full decompression needed.</span>
+    </div>
+  </div>
+
+  <div class="takeaway">
+  <div class="takeaway-icon">💡</div>
+  <div class="takeaway-text">
+    <strong>Operations &amp; CI/CD Logs: 2.8 second queries — the fastest of all 10 log types.</strong>
+    Build logs, deployment events, feature flag changes, rollback triggers: at 6.54%, 47% smaller
+    than zstd-3. Ops logs are dominated by state transitions — created, updated, deleted, success,
+    failure, enabled, disabled — short strings PFC encodes with single-byte tokens.
+    When a release from last sprint introduced a regression, query the exact deployment window
+    by timestamp in 2.8 seconds. No log aggregation service required for historical ops data.
+    Archive build artifacts and deploy events together in the same queryable PFC file.
+  </div>
+</div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- LOG TYPE 08: CLOUD PROVIDER LOGS                     -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-title">
+    <span class="num">8</span> Cloud Provider Logs
+  </div>
+
+  <div class="log-badge">
+    <strong>Sources:</strong> AWS CloudTrail · GCP Audit Logs · Azure Monitor · IAM events
+    &nbsp;|&nbsp;
+    <strong>File:</strong> 08_cloud_provider_logs_1gb.jsonl · 1.00 GB · ~4.5M lines
+  </div>
+
+  <div class="key-stats">
+    <div class="stat-card highlight">
+      <div class="stat-label">PFC-JSONL Ratio</div>
+      <div class="stat-value green">10.43%</div>
+      <div class="stat-sub">of original size</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs gzip-9</div>
+      <div class="stat-value">30% smaller</div>
+      <div class="stat-sub">gzip-9: 14.90%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs zstd-3</div>
+      <div class="stat-value">37% smaller</div>
+      <div class="stat-sub">zstd-3: 16.61%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Compress Speed</div>
+      <div class="stat-value">51.7 MB/s</div>
+      <div class="stat-sub">4.2× faster than gzip-9</div>
+    </div>
+  </div>
+
+  <div class="bench-grid">
+    <div class="bench-card">
+      <h3>Compression Ratio — lower is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4 <span class="winner">BEST</span></span>
+          <span class="val">10.43%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:63%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">14.90%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:90%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3</span>
+          <span class="val">16.61%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+    </div>
+    <div class="bench-card">
+      <h3>Compress Speed — higher is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3 <span class="winner" style="color:var(--zstd)">FASTEST</span></span>
+          <span class="val">147.4 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4</span>
+          <span class="val">51.7 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:35%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">12.2 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:8%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Tool</th><th>Ratio</th><th>Output Size</th>
+        <th>Compress</th><th>Wall-Clock</th><th>Decompress</th><th>Query Support</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="pfc-row">
+        <td>PFC-JSONL v5.6.4 <span class="badge-win">best ratio</span></td>
+        <td class="best">10.43%</td><td>106 MB</td>
+        <td>51.7 MB/s</td><td class="best">19.8s</td><td>52.2 MB/s</td>
+        <td>✅ Time-range BIDX</td>
+      </tr>
+      <tr class="gzip-row">
+        <td>gzip -9</td><td>14.90%</td><td>153 MB</td>
+        <td>12.2 MB/s</td><td>87.9s</td><td>164.9 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+      <tr class="zstd-row">
+        <td>zstd -3</td><td>16.61%</td><td>171 MB</td>
+        <td>147.4 MB/s</td><td>7.2s</td><td>406.2 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:20px;padding:0 4px;">⚡ PFC runs <strong style="color:var(--text)">6 parallel workers</strong> (~2 GB RAM total) — gzip and zstd run <strong style="color:var(--text)">single-threaded</strong>. Wall-clock times reflect real user wait time.</p>
+
+  <div class="duckdb-row">
+    <div class="duckdb-badge">DuckDB Extension</div>
+    <div class="duckdb-info">
+      Time-range query (1h window / 30-day dataset): <strong>3.8 s — 85,440 rows</strong>
+      <span> — BIDX filters to 1-2 of 32 blocks. No full decompression needed.</span>
+    </div>
+  </div>
+
+  <div class="takeaway">
+  <div class="takeaway-icon">💡</div>
+  <div class="takeaway-text">
+    <strong>Cloud Provider Logs: CloudTrail, GCP Audit, Azure Monitor — compliance archives that finally answer questions.</strong>
+    At 10.43%, 30% smaller than gzip and 37% smaller than zstd-3. Cloud audit logs are required
+    for compliance in virtually every regulated industry — and they must be retained for 1–7 years.
+    With traditional tools, those archives are write-only: compressed on S3, impossible to query
+    without a full download. PFC changes that: a CloudTrail query for all API calls from a specific
+    IAM role in a specific hour returns in 3.8 seconds, directly from S3 IA.
+    Cut cloud audit storage costs by 37% and keep every byte queryable for the full retention period.
+  </div>
+</div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- LOG TYPE 09: NETWORK / FIREWALL LOGS                 -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-title">
+    <span class="num">9</span> Network / Firewall Logs
+  </div>
+
+  <div class="log-badge">
+    <strong>Sources:</strong> HAProxy · iptables · UFW · AWS VPC Flow Logs · Cloudflare WAF · Cisco ASA
+    &nbsp;|&nbsp;
+    <strong>File:</strong> 09_network_firewall_logs_1gb.jsonl · 1.00 GB · ~5.5M lines
+  </div>
+
+  <div class="key-stats">
+    <div class="stat-card highlight">
+      <div class="stat-label">PFC-JSONL Ratio</div>
+      <div class="stat-value green">6.14%</div>
+      <div class="stat-sub">2nd best in suite 🥈</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs gzip-9</div>
+      <div class="stat-value">47% smaller</div>
+      <div class="stat-sub">gzip-9: 11.54%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs zstd-3</div>
+      <div class="stat-value">52% smaller</div>
+      <div class="stat-sub">zstd-3: 12.86%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Compress Speed</div>
+      <div class="stat-value">55.0 MB/s</div>
+      <div class="stat-sub">3.3× faster than gzip-9</div>
+    </div>
+  </div>
+
+  <div class="bench-grid">
+    <div class="bench-card">
+      <h3>Compression Ratio — lower is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4 <span class="winner">BEST 🥈</span></span>
+          <span class="val">6.14%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:48%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">11.54%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:90%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3</span>
+          <span class="val">12.86%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+    </div>
+    <div class="bench-card">
+      <h3>Compress Speed — higher is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3 <span class="winner" style="color:var(--zstd)">FASTEST</span></span>
+          <span class="val">190.7 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4</span>
+          <span class="val">55.0 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:29%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">15.5 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:8%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Tool</th><th>Ratio</th><th>Output Size</th>
+        <th>Compress</th><th>Wall-Clock</th><th>Decompress</th><th>Query Support</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="pfc-row">
+        <td>PFC-JSONL v5.6.4 <span class="badge-win">best ratio 🥈</span></td>
+        <td class="best">6.14%</td><td>62 MB</td>
+        <td>55.0 MB/s</td><td class="best">18.6s</td><td>53.3 MB/s</td>
+        <td>✅ Time-range BIDX</td>
+      </tr>
+      <tr class="gzip-row">
+        <td>gzip -9</td><td>11.54%</td><td>119 MB</td>
+        <td>15.5 MB/s</td><td>69.1s</td><td>186.5 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+      <tr class="zstd-row">
+        <td>zstd -3</td><td>12.86%</td><td>132 MB</td>
+        <td>190.7 MB/s</td><td>5.6s</td><td>494.3 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:20px;padding:0 4px;">⚡ PFC runs <strong style="color:var(--text)">6 parallel workers</strong> (~2 GB RAM total) — gzip and zstd run <strong style="color:var(--text)">single-threaded</strong>. Wall-clock times reflect real user wait time.</p>
+
+  <div class="duckdb-row">
+    <div class="duckdb-badge">DuckDB Extension</div>
+    <div class="duckdb-info">
+      Time-range query (1h window / 30-day dataset): <strong>4.5 s — 239,740 rows</strong>
+      <span> — BIDX filters to 2 of 32 blocks. No full decompression needed.</span>
+    </div>
+  </div>
+
+  <div class="takeaway">
+  <div class="takeaway-icon">💡</div>
+  <div class="takeaway-text">
+    <strong>Network &amp; Firewall Logs: 52% smaller than zstd-3 — second-best ratio across all log types.</strong>
+    IP addresses, port numbers, protocol identifiers (TCP, UDP), firewall actions (ACCEPT, DROP, REJECT)
+    and connection states recur millions of times per hour. PFC's pattern library covers these
+    network-specific fields natively — the encoder recognises them and compresses to 6.14%.
+    For security teams: trace a suspicious IP, find lateral movement patterns, or audit firewall
+    policy violations across 30 days of data in 4.5 seconds per query.
+    Network log archives are often the largest and least queried — exactly the use case PFC is built for.
+  </div>
+</div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- LOG TYPE 10: E-COMMERCE / TRANSACTION LOGS           -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-title">
+    <span class="num">10</span> E-Commerce / Transaction Logs
+  </div>
+
+  <div class="log-badge">
+    <strong>Sources:</strong> Payment gateways · Order systems · Stripe/PayPal · Fraud detection · Checkout
+    &nbsp;|&nbsp;
+    <strong>File:</strong> 10_ecommerce_transaction_logs_1gb.jsonl · 1.00 GB · ~4.5M lines
+  </div>
+
+  <div class="key-stats">
+    <div class="stat-card highlight">
+      <div class="stat-label">PFC-JSONL Ratio</div>
+      <div class="stat-value green">10.18%</div>
+      <div class="stat-sub">of original size</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs gzip-9</div>
+      <div class="stat-value">25% smaller</div>
+      <div class="stat-sub">gzip-9: 13.70%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">vs zstd-3</div>
+      <div class="stat-value">35% smaller</div>
+      <div class="stat-sub">zstd-3: 15.78%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Compress Speed</div>
+      <div class="stat-value">50.1 MB/s</div>
+      <div class="stat-sub">2.9× faster than gzip-9</div>
+    </div>
+  </div>
+
+  <div class="bench-grid">
+    <div class="bench-card">
+      <h3>Compression Ratio — lower is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4 <span class="winner">BEST</span></span>
+          <span class="val">10.18%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:65%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">13.70%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:87%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3</span>
+          <span class="val">15.78%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+    </div>
+    <div class="bench-card">
+      <h3>Compress Speed — higher is better</h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--zstd)">zstd -3 <span class="winner" style="color:var(--zstd)">FASTEST</span></span>
+          <span class="val">128.9 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill zstd" style="width:100%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--pfc)">PFC-JSONL v5.6.4</span>
+          <span class="val">50.1 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill pfc" style="width:39%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span class="tool" style="color:var(--gzip)">gzip -9</span>
+          <span class="val">15.0 MB/s</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill gzip" style="width:12%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Tool</th><th>Ratio</th><th>Output Size</th>
+        <th>Compress</th><th>Wall-Clock</th><th>Decompress</th><th>Query Support</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="pfc-row">
+        <td>PFC-JSONL v5.6.4 <span class="badge-win">best ratio</span></td>
+        <td class="best">10.18%</td><td>104 MB</td>
+        <td>50.1 MB/s</td><td class="best">20.4s</td><td>54.7 MB/s</td>
+        <td>✅ Time-range BIDX</td>
+      </tr>
+      <tr class="gzip-row">
+        <td>gzip -9</td><td>13.70%</td><td>141 MB</td>
+        <td>15.0 MB/s</td><td>71.3s</td><td>172.1 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+      <tr class="zstd-row">
+        <td>zstd -3</td><td>15.78%</td><td>162 MB</td>
+        <td>128.9 MB/s</td><td>8.3s</td><td>456.5 MB/s</td>
+        <td>❌ Full scan only</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:12px;color:var(--muted);margin-top:-8px;margin-bottom:20px;padding:0 4px;">⚡ PFC runs <strong style="color:var(--text)">6 parallel workers</strong> (~2 GB RAM total) — gzip and zstd run <strong style="color:var(--text)">single-threaded</strong>. Wall-clock times reflect real user wait time.</p>
+
+  <div class="duckdb-row">
+    <div class="duckdb-badge">DuckDB Extension</div>
+    <div class="duckdb-info">
+      Time-range query (1h window / 30-day dataset): <strong>3.4 s — 73,719 rows</strong>
+      <span> — transaction logs queryable by time range in milliseconds. Critical for fraud investigation.</span>
+    </div>
+  </div>
+
+  <div class="takeaway">
+  <div class="takeaway-icon">💡</div>
+  <div class="takeaway-text">
+    <strong>E-Commerce &amp; Transaction Logs: PCI compliance keeps them for 7 years. PFC keeps them queryable.</strong>
+    Payment events, order state transitions, cart actions — at 10.18%, 35% smaller than zstd-3.
+    Transaction logs have the longest mandatory retention of any log type, and they are queried
+    almost exclusively for forensics: a dispute from four months ago, a fraud pattern across
+    specific user IDs, a failed payment window during a promotions event.
+    With PFC on S3 Glacier Instant Retrieval, seven years of transaction logs cost a fraction
+    of traditional warm storage — and a timestamp query still returns in 3.4 seconds.
+    No restore window. No re-hydration. Just SQL.
+  </div>
+</div>
+
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- METHODOLOGY                                           -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section-title">
+    <span class="num" style="background:var(--bg3);color:var(--muted)">i</span>
+    Methodology
+  </div>
+
+  <div class="method-grid">
+    <div class="method-card">
+      <h4>Test Environment</h4>
+      <p>Dedicated Linux VPS · 6-Core CPU · 12 GB RAM · Ubuntu 22.04 LTS · No other workloads running during tests.</p>
+    </div>
+    <div class="method-card">
+      <h4>Test Data</h4>
+      <p>1 GB synthetic JSONL per log type. Seeded (seed=42) for reproducibility. Representative of real production log schemas and value distributions.</p>
+    </div>
+    <div class="method-card">
+      <h4>PFC-JSONL Config</h4>
+      <p>32 MiB blocks · 6 workers (rayon) · Sparse rANS O2 (N=64) · SoA timestamp columns · PFCJ preprocessor v5.</p>
+    </div>
+    <div class="method-card">
+      <h4>Competitors</h4>
+      <p>gzip -9 (max compression, default for many log pipelines) · zstd -3 (streaming standard, used by Fluent Bit / Vector / Kafka defaults).</p>
+    </div>
+    <div class="method-card">
+      <h4>Timing</h4>
+      <p>Wall-clock time via <code>date +%s%N</code>. Each tool run once after OS page-cache warm-up. RAM via <code>/usr/bin/time -v</code> (max RSS).</p>
+    </div>
+    <div class="method-card">
+      <h4>Query Test</h4>
+      <p>DuckDB + pfc-jsonl extension. 1-hour time window queried from a 30-day compressed dataset. Roundtrip verified byte-identical on all runs.</p>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ── FOOTER ── -->
+<div class="footer">
+  <div>
+    <strong>PFC-JSONL v5.6.4</strong> · ImpossibleForge ·
+    Private benchmark — generated 2026-05-12
+  </div>
+  <div>
+    <a href="https://impossibleforge.com">impossibleforge.com</a>
+  </div>
+</div>
+
+</body>
+</html>

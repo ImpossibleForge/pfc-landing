@@ -45,17 +45,17 @@
   }
   .brand-logo {
     width: 44px; height: 44px; border-radius: 10px;
-    background: linear-gradient(135deg, var(--pfc), #1a8c3a);
+    overflow: hidden;
     display: flex; align-items: center; justify-content: center;
-    font-weight: 900; font-size: 20px; color: #fff; letter-spacing: -1px;
   }
+  .brand-logo img { width: 44px; height: 44px; object-fit: cover; border-radius: 10px; }
   .brand-name { font-size: 22px; font-weight: 700; }
   .brand-version {
     font-size: 13px; color: var(--pfc); background: var(--pfc-dim);
     padding: 2px 10px; border-radius: 20px; font-weight: 600;
   }
   h1 { font-size: 32px; font-weight: 800; margin-bottom: 10px; }
-  h1 span { color: var(--pfc); }
+  h1 span { color: #4fc3f7; }
   .subtitle { color: var(--muted); font-size: 16px; max-width: 640px; }
   .meta-row {
     display: flex; gap: 24px; margin-top: 20px; flex-wrap: wrap;
@@ -327,8 +327,8 @@
 
   /* ── Status ribbon ── */
   .status-ribbon {
-    background: var(--pfc-dim); border-bottom: 1px solid var(--pfc);
-    padding: 8px 48px; font-size: 13px; color: var(--pfc);
+    background: rgba(79,195,247,0.08); border-bottom: 1px solid #4fc3f7;
+    padding: 8px 48px; font-size: 13px; color: #4fc3f7;
     text-align: center; font-weight: 600;
   }
 
@@ -354,7 +354,7 @@
 <header class="site-header">
   <div class="header-inner">
     <div class="brand">
-      <div class="brand-logo">PF</div>
+      <div class="brand-logo"><img src="logo.png" alt="ImpossibleForge"></div>
       <span class="brand-name">PFC-JSONL</span>
       <span class="brand-version">v5.6.5</span>
     </div>

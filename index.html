@@ -2236,18 +2236,22 @@ footer a:hover { color: var(--accent); }
     <div id="tab-forwarder" class="tab-pane">
       <div class="code-block">
         <button class="copy-btn" onclick="copyCode('forwarder-code')">copy</button>
-        <pre id="forwarder-code"><span class="c"># Install the pipeline</span>
-<span class="cmd">pip</span> <span class="arg">install pfc-jsonl</span>
+        <pre id="forwarder-code"><span class="c"># Step 1: Install pfc_jsonl binary</span>
+<span class="cmd">curl</span> <span class="flag">-L</span> https://github.com/ImpossibleForge/pfc-jsonl/releases/latest/download/pfc_jsonl-linux-x64 \
+     <span class="flag">-o</span> /usr/local/bin/pfc_jsonl <span class="arg">&& chmod +x /usr/local/bin/pfc_jsonl</span>
 
-<span class="c"># Start the forwarder</span>
-<span class="cmd">pfc-forwarder</span> <span class="flag">--port</span> <span class="arg">5170</span> <span class="flag">--output</span> <span class="arg">/var/log/pfc/</span>
+<span class="c"># Step 2: Download and start the forwarder</span>
+<span class="cmd">curl</span> <span class="flag">-L</span> https://raw.githubusercontent.com/ImpossibleForge/pfc-fluentbit/main/pfc_forwarder.py \
+     <span class="flag">-o</span> <span class="arg">/opt/pfc_forwarder.py</span>
+<span class="cmd">python3</span> <span class="arg">/opt/pfc_forwarder.py</span>
 
-<span class="c"># Point Fluent Bit OUTPUT to tcp://localhost:5170</span>
+<span class="c"># Step 3: Point Fluent Bit at it (fluent-bit.conf)</span>
 <span class="c"># [OUTPUT]</span>
-<span class="c">#     Name  tcp</span>
-<span class="c">#     Host  127.0.0.1</span>
-<span class="c">#     Port  5170</span>
-<span class="c">#     Format json_lines</span></pre>
+<span class="c">#     Name    tcp</span>
+<span class="c">#     Match   *</span>
+<span class="c">#     Host    127.0.0.1</span>
+<span class="c">#     Port    5170</span>
+<span class="c">#     Format  json_lines</span></pre>
       </div>
     </div>
 

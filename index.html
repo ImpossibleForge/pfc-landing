@@ -1669,11 +1669,11 @@ footer a:hover { color: var(--accent); }
       <div class="logtype-ratio">9.13%</div>
       <div class="logtype-savings">31% smaller than gzip</div>
     </div>
-    <div class="logtype-card logtype-highlight">
+    <div class="logtype-card">
       <div class="logtype-icon">🖥️</div>
       <div class="logtype-name">Infrastructure / System</div>
       <div class="logtype-ratio">5.31%</div>
-      <div class="logtype-savings">46% smaller than gzip 🏆</div>
+      <div class="logtype-savings">46% smaller than gzip</div>
     </div>
     <div class="logtype-card">
       <div class="logtype-icon">📡</div>
@@ -2213,7 +2213,6 @@ footer a:hover { color: var(--accent); }
       <button class="tab-btn active" onclick="switchTab('duckdb', this)">🦆 DuckDB Query</button>
       <button class="tab-btn" onclick="switchTab('forwarder', this)">📡 Fluent Bit Forwarder</button>
       <button class="tab-btn" onclick="switchTab('migrate', this)">📦 Migrate Archives</button>
-      <button class="tab-btn" onclick="switchTab('gateway', this)">🌐 HTTP Gateway</button>
     </div>
 
     <div id="tab-duckdb" class="tab-pane active">
@@ -2267,25 +2266,6 @@ footer a:hover { color: var(--accent); }
 <span class="c"># Lossless verified — MD5 checked before original is touched</span>
 <span class="c"># Supports: .gz / .bz2 / .zst / .lz4  →  .pfc</span></pre>
       </div>
-    <div id="tab-gateway" class="tab-pane">
-      <div class="code-block">
-        <button class="copy-btn" onclick="copyCode('gateway-code')">copy</button>
-        <pre id="gateway-code"><span class="c"># Start pfc-gateway — HTTP REST API for ingest + query</span>
-<span class="cmd">pip</span> <span class="arg">install pfc-gateway</span>
-
-<span class="cmd">pfc-gateway</span> <span class="flag">--port</span> <span class="arg">8765</span> <span class="flag">--ingest-dir</span> <span class="arg">/var/log/pfc</span>
-
-<span class="c"># Ingest logs via HTTP POST (JSON or NDJSON)</span>
-<span class="cmd">curl</span> <span class="flag">-X POST</span> http://localhost:8765/ingest <span class="flag">-d</span> <span class="arg">'{"ts":"2026-01-01T10:00:00Z","level":"error","msg":"..."}'</span>
-
-<span class="c"># Query a time window — no DuckDB required</span>
-<span class="cmd">curl</span> <span class="flag">-X POST</span> http://localhost:8765/query \
-  <span class="flag">-d</span> <span class="arg">'{"file":"/var/log/pfc/logs.pfc","from":"2026-01-01T10:00","to":"2026-01-01T11:00"}'</span>
-
-<span class="c"># Also works with: Grafana, PowerBI, any HTTP client</span></pre>
-      </div>
-    </div>
-    </div>
   </div>
 </section>
 

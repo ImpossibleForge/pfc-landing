@@ -53,6 +53,71 @@ body::before {
   z-index: 0;
 }
 
+/* LOG TYPES GRID */
+.logtype-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-top: 40px;
+}
+@media (max-width: 1100px) { .logtype-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 700px)  { .logtype-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.logtype-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 16px;
+  text-align: center;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.logtype-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.logtype-highlight { border-color: rgba(79,195,247,0.4); background: rgba(79,195,247,0.04); }
+.logtype-icon { font-size: 24px; margin-bottom: 8px; }
+.logtype-name { font-size: 12px; color: var(--white); font-weight: 600; margin-bottom: 10px; line-height: 1.4; }
+.logtype-ratio { font-size: 22px; font-weight: 700; color: var(--accent); font-family: var(--font-display); }
+.logtype-savings { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+/* ECOSYSTEM GRID */
+.ecosystem-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 40px;
+}
+@media (max-width: 900px) { .ecosystem-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .ecosystem-grid { grid-template-columns: 1fr; } }
+
+.eco-category {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+.eco-category-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+.eco-tool {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.eco-tool:last-child { border-bottom: none; padding-bottom: 0; }
+.eco-tool-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--white);
+  white-space: nowrap;
+}
+.eco-tool-desc { font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: 2px; }
+
 /* NAV */
 nav {
   position: fixed;
@@ -1466,10 +1531,12 @@ footer a:hover { color: var(--accent); }
   <a class="nav-logo" href="#"><span>Impossible</span>Forge</a>
   <ul class="nav-links">
     <li><a href="#pipeline">Pipeline</a></li>
+    <li><a href="#logtypes">Log Types</a></li>
     <li><a href="#problems">Why PFC</a></li>
     <li><a href="#comparison">Compare</a></li>
     <li><a href="#calculator">Estimate Savings</a></li>
     <li><a href="#quickstart">Quick Start</a></li>
+    <li><a href="benchmarks.html" target="_blank">Benchmarks ↗</a></li>
     <li><a href="https://github.com/ImpossibleForge" target="_blank">GitHub →</a></li>
   </ul>
   <button class="hamburger" id="hamburger" aria-label="Menu">
@@ -1502,7 +1569,7 @@ footer a:hover { color: var(--accent); }
       <span class="hero-product">pfc-migrate</span>
     </div>
     <p class="hero-sub">
-      Archive JSONL logs at ~9% of original size. Query any time window instantly with DuckDB.
+      Archive JSONL logs at 5–13% of original size. Query any time window instantly with DuckDB — directly from S3, no restore, no full decompression.
       No egress fees, no heavy infrastructure, no lock-in.
     </p>
     <div class="hero-ctas">
@@ -1511,20 +1578,20 @@ footer a:hover { color: var(--accent); }
     </div>
     <div class="hero-stats">
       <div class="stat-item">
-        <div class="stat-num">~9%</div>
+        <div class="stat-num">5–13%</div>
         <div class="stat-label">of original size</div>
       </div>
       <div class="stat-item">
-        <div class="stat-num">25%</div>
+        <div class="stat-num">up to 57%</div>
         <div class="stat-label">smaller than gzip</div>
       </div>
       <div class="stat-item">
-        <div class="stat-num">$0</div>
-        <div class="stat-label">per query cost</div>
+        <div class="stat-num">&lt;6s</div>
+        <div class="stat-label">1-hour query via DuckDB</div>
       </div>
       <div class="stat-item">
-        <div class="stat-num">4</div>
-        <div class="stat-label">cloud backends</div>
+        <div class="stat-num">10</div>
+        <div class="stat-label">enterprise log types</div>
       </div>
     </div>
   </div>
@@ -1549,7 +1616,7 @@ footer a:hover { color: var(--accent); }
       <div class="step-num">02 — COMPRESS</div>
       <span class="step-icon">⚙️</span>
       <div class="step-title">PFC Core Engine</div>
-      <div class="step-desc">BWT → MTF → RLE → rANS O1 pipeline compresses each block and writes a timestamp index.</div>
+      <div class="step-desc">BWT → MTF → RLE → sparse rANS O2 pipeline compresses each block and writes a timestamp index.</div>
       <span class="step-tech">pfc_jsonl binary</span>
     </div>
     <div class="pipeline-arrow">▶</div>
@@ -1568,6 +1635,79 @@ footer a:hover { color: var(--accent); }
       <div class="step-desc">read_pfc_jsonl() uses the block index to jump directly to your time window. Decompress only what you need.</div>
       <span class="step-tech">pfc-duckdb</span>
     </div>
+  </div>
+</section>
+
+<!-- LOG TYPES -->
+<section id="logtypes">
+  <div class="section-label">Coverage</div>
+  <h2>Optimized for every enterprise log format.</h2>
+  <p class="section-sub">Purpose-built patterns for the 10 most common log types. If your team produces it, PFC-JSONL understands it.</p>
+
+  <div class="logtype-grid reveal">
+    <div class="logtype-card">
+      <div class="logtype-icon">🌐</div>
+      <div class="logtype-name">API Access Logs</div>
+      <div class="logtype-ratio">12.76%</div>
+      <div class="logtype-savings">28% smaller than gzip</div>
+    </div>
+    <div class="logtype-card">
+      <div class="logtype-icon">☸️</div>
+      <div class="logtype-name">Kubernetes / Container</div>
+      <div class="logtype-ratio">7.97%</div>
+      <div class="logtype-savings">33% smaller than gzip</div>
+    </div>
+    <div class="logtype-card">
+      <div class="logtype-icon">📱</div>
+      <div class="logtype-name">Application Logs</div>
+      <div class="logtype-ratio">10.56%</div>
+      <div class="logtype-savings">28% smaller than gzip</div>
+    </div>
+    <div class="logtype-card">
+      <div class="logtype-icon">🔐</div>
+      <div class="logtype-name">Auth / Security</div>
+      <div class="logtype-ratio">9.13%</div>
+      <div class="logtype-savings">31% smaller than gzip</div>
+    </div>
+    <div class="logtype-card logtype-highlight">
+      <div class="logtype-icon">🖥️</div>
+      <div class="logtype-name">Infrastructure / System</div>
+      <div class="logtype-ratio">5.31%</div>
+      <div class="logtype-savings">46% smaller than gzip 🏆</div>
+    </div>
+    <div class="logtype-card">
+      <div class="logtype-icon">📡</div>
+      <div class="logtype-name">Streaming / Kafka</div>
+      <div class="logtype-ratio">7.49%</div>
+      <div class="logtype-savings">34% smaller than gzip</div>
+    </div>
+    <div class="logtype-card">
+      <div class="logtype-icon">⚙️</div>
+      <div class="logtype-name">Ops / CI-CD</div>
+      <div class="logtype-ratio">6.54%</div>
+      <div class="logtype-savings">35% smaller than gzip</div>
+    </div>
+    <div class="logtype-card">
+      <div class="logtype-icon">☁️</div>
+      <div class="logtype-name">Cloud Provider Logs</div>
+      <div class="logtype-ratio">10.43%</div>
+      <div class="logtype-savings">30% smaller than gzip</div>
+    </div>
+    <div class="logtype-card">
+      <div class="logtype-icon">🔥</div>
+      <div class="logtype-name">Network / Firewall</div>
+      <div class="logtype-ratio">6.14%</div>
+      <div class="logtype-savings">47% smaller than gzip</div>
+    </div>
+    <div class="logtype-card">
+      <div class="logtype-icon">🛒</div>
+      <div class="logtype-name">E-Commerce / Transactions</div>
+      <div class="logtype-ratio">10.18%</div>
+      <div class="logtype-savings">25% smaller than gzip</div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:32px;">
+    <a href="benchmarks.html" target="_blank" class="btn-secondary" style="display:inline-block;">Full Benchmark Report — all 10 types, 1 GB datasets ↗</a>
   </div>
 </section>
 
@@ -1825,7 +1965,7 @@ footer a:hover { color: var(--accent); }
         <div class="calc-cta" id="calc-cta"></div>
 
         <p class="calc-footnote">
-          Based on AWS S3 Standard ($0.023/GB/mo), Athena ($5/TB scanned), PFC ~9% compression ratio. *Same-region access assumed; internet egress applies at $0.09/GB.
+          Based on AWS S3 Standard ($0.023/GB/mo), Athena ($5/TB scanned), PFC 5–13% compression ratio (API access logs: ~12.8%, infra/system logs: ~5.3%). *Same-region access assumed; internet egress applies at $0.09/GB.
         </p>
 
       </div>
@@ -1857,6 +1997,119 @@ footer a:hover { color: var(--accent); }
   </div>
 </div>
 
+<!-- ECOSYSTEM -->
+<section id="ecosystem">
+  <div class="section-label">Ecosystem</div>
+  <h2>One format. A complete toolchain.</h2>
+  <p class="section-sub">Every piece of your pipeline — from log ingestion to database archiving to SQL queries — covered by purpose-built tools that all speak PFC.</p>
+
+  <div class="ecosystem-grid reveal">
+
+    <div class="eco-category">
+      <div class="eco-category-label">📡 Ingest</div>
+      <div class="eco-tool">
+        <div>
+          <div class="eco-tool-name">pfc-fluentbit</div>
+          <div class="eco-tool-desc">Fluent Bit TCP output → .pfc</div>
+        </div>
+      </div>
+      <div class="eco-tool">
+        <div>
+          <div class="eco-tool-name">pfc-vector</div>
+          <div class="eco-tool-desc">Vector.dev HTTP sink → .pfc</div>
+        </div>
+      </div>
+      <div class="eco-tool">
+        <div>
+          <div class="eco-tool-name">pfc-telegraf</div>
+          <div class="eco-tool-desc">Telegraf HTTP output plugin → .pfc</div>
+        </div>
+      </div>
+      <div class="eco-tool">
+        <div>
+          <div class="eco-tool-name">pfc-otel-collector</div>
+          <div class="eco-tool-desc">OpenTelemetry OTLP/HTTP → .pfc</div>
+        </div>
+      </div>
+      <div class="eco-tool">
+        <div>
+          <div class="eco-tool-name">pfc-kafka-consumer</div>
+          <div class="eco-tool-desc">Kafka / Redpanda consumer → .pfc</div>
+        </div>
+      </div>
+      <div class="eco-tool">
+        <div>
+          <div class="eco-tool-name">pfc-gateway</div>
+          <div class="eco-tool-desc">HTTP REST: POST /ingest + POST /query</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="eco-category">
+      <div class="eco-category-label">🦆 Query & Visualization</div>
+      <div class="eco-tool">
+        <div>
+          <div class="eco-tool-name">pfc-duckdb</div>
+          <div class="eco-tool-desc">DuckDB Community Extension — SQL queries on .pfc files</div>
+        </div>
+      </div>
+      <div class="eco-tool">
+        <div>
+          <div class="eco-tool-name">pfc-gateway</div>
+          <div class="eco-tool-desc">REST API queries — no DuckDB required</div>
+        </div>
+      </div>
+      <div class="eco-tool">
+        <div>
+          <div class="eco-tool-name">pfc-grafana</div>
+          <div class="eco-tool-desc">Native Grafana datasource plugin</div>
+        </div>
+      </div>
+      <div class="eco-tool">
+        <div>
+          <div class="eco-tool-name">pfc-py</div>
+          <div class="eco-tool-desc">Python client library (PyPI: pfc-jsonl)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="eco-category">
+      <div class="eco-category-label">🗄️ Archive & Export</div>
+      <div class="eco-tool">
+        <div>
+          <div class="eco-tool-name">pfc-archiver-*</div>
+          <div class="eco-tool-desc">Autonomous archive daemons: CrateDB, QuestDB, InfluxDB, ClickHouse, TimescaleDB</div>
+        </div>
+      </div>
+      <div class="eco-tool">
+        <div>
+          <div class="eco-tool-name">pfc-export-*</div>
+          <div class="eco-tool-desc">One-shot DB table exports: same 5 databases</div>
+        </div>
+      </div>
+      <div class="eco-tool">
+        <div>
+          <div class="eco-tool-name">pfc-migrate</div>
+          <div class="eco-tool-desc">Convert gzip/zstd/bz2/lz4 → .pfc on S3, Azure, GCS</div>
+        </div>
+      </div>
+      <div class="eco-tool">
+        <div>
+          <div class="eco-tool-name">pfc-convert</div>
+          <div class="eco-tool-desc">Apache CLF, nginx, syslog, CSV → JSONL → .pfc</div>
+        </div>
+      </div>
+      <div class="eco-tool">
+        <div>
+          <div class="eco-tool-name">pfc-ingest-watchdog</div>
+          <div class="eco-tool-desc">Auto-compress when new files arrive (folder or S3)</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
 <!-- TECH -->
 <section id="tech">
   <div class="section-label">Under the hood</div>
@@ -1874,7 +2127,7 @@ footer a:hover { color: var(--accent); }
           <div class="algo-arrow">→</div>
           <div class="algo-step">RLE</div>
           <div class="algo-arrow">→</div>
-          <div class="algo-step highlight">rANS O1</div>
+          <div class="algo-step highlight">sparse rANS O2</div>
         </div>
         <p style="font-size:12px;color:var(--muted);margin-top:20px;line-height:1.7;">
           Burrows-Wheeler Transform reorders data for maximum symbol locality.
@@ -1905,7 +2158,7 @@ footer a:hover { color: var(--accent); }
               <td>PFC-JSONL</td>
               <td>
                 <div class="ratio-bar">
-                  <span style="width:40px">~9%</span>
+                  <span style="width:40px">5–13%</span>
                   <div class="bar-track"><div class="bar-fill" style="width:64%"></div></div>
                 </div>
               </td>
@@ -1943,7 +2196,7 @@ footer a:hover { color: var(--accent); }
             </tr>
           </tbody>
         </table>
-        <p class="disclaimer">Ratio varies by data structure. Tested on JSONL log datasets from 200MB to 5GB across multiple real-world shapes.</p>
+        <p class="disclaimer">Ratio varies by log type. Tested on 1 GB real-world datasets across 10 enterprise log formats. <a href="benchmarks.html" target="_blank" style="color:var(--accent)">Full benchmark report ↗</a></p>
       </div>
     </div>
   </div>
@@ -1960,6 +2213,7 @@ footer a:hover { color: var(--accent); }
       <button class="tab-btn active" onclick="switchTab('duckdb', this)">🦆 DuckDB Query</button>
       <button class="tab-btn" onclick="switchTab('forwarder', this)">📡 Fluent Bit Forwarder</button>
       <button class="tab-btn" onclick="switchTab('migrate', this)">📦 Migrate Archives</button>
+      <button class="tab-btn" onclick="switchTab('gateway', this)">🌐 HTTP Gateway</button>
     </div>
 
     <div id="tab-duckdb" class="tab-pane active">
@@ -2013,6 +2267,24 @@ footer a:hover { color: var(--accent); }
 <span class="c"># Lossless verified — MD5 checked before original is touched</span>
 <span class="c"># Supports: .gz / .bz2 / .zst / .lz4  →  .pfc</span></pre>
       </div>
+    <div id="tab-gateway" class="tab-pane">
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode('gateway-code')">copy</button>
+        <pre id="gateway-code"><span class="c"># Start pfc-gateway — HTTP REST API for ingest + query</span>
+<span class="cmd">pip</span> <span class="arg">install pfc-gateway</span>
+
+<span class="cmd">pfc-gateway</span> <span class="flag">--port</span> <span class="arg">8765</span> <span class="flag">--ingest-dir</span> <span class="arg">/var/log/pfc</span>
+
+<span class="c"># Ingest logs via HTTP POST (JSON or NDJSON)</span>
+<span class="cmd">curl</span> <span class="flag">-X POST</span> http://localhost:8765/ingest <span class="flag">-d</span> <span class="arg">'{"ts":"2026-01-01T10:00:00Z","level":"error","msg":"..."}'</span>
+
+<span class="c"># Query a time window — no DuckDB required</span>
+<span class="cmd">curl</span> <span class="flag">-X POST</span> http://localhost:8765/query \
+  <span class="flag">-d</span> <span class="arg">'{"file":"/var/log/pfc/logs.pfc","from":"2026-01-01T10:00","to":"2026-01-01T11:00"}'</span>
+
+<span class="c"># Also works with: Grafana, PowerBI, any HTTP client</span></pre>
+      </div>
+    </div>
     </div>
   </div>
 </section>

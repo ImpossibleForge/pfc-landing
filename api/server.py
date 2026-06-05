@@ -136,6 +136,10 @@ def compress():
         session_id   = str(uuid.uuid4())
         session_path = _session_pfc_path(session_id)
         shutil.copy2(out_path, session_path)
+        # Copy .bidx index if present (required by pfc-duckdb extension)
+        bidx_src = out_path + '.bidx'
+        if os.path.exists(bidx_src):
+            shutil.copy2(bidx_src, session_path + '.bidx')
         expires_at = time.time() + SESSION_TTL
 
         _write_session(session_id, {
@@ -238,33 +242,66 @@ def query():
 
     pfc_path = session['path']
     ts_field = session['ts_field']
-
-    # read_pfc_jsonl() returns one 'line' column (raw JSON string per row).
-    # Use JSON path extraction for field access and filtering.
-    sql = (
-        f"LOAD pfc; LOAD json; "
-        f"SELECT "
-        f"  line->>'$.timestamp' AS timestamp, "
-        f"  line->>'$.level'     AS level, "
-        f"  line->>'$.service'   AS service, "
-        f"  line->>'$.method'    AS method, "
-        f"  line->>'$.path'      AS path, "
-        f"  line->>'$.status'    AS status, "
-        f"  line->>'$.duration_ms' AS duration_ms, "
-        f"  line->>'$.message'   AS message "
-        f"FROM read_pfc_jsonl('{pfc_path}') "
-        f"WHERE line->>'$.{ts_field}' >= '{from_ts}' "
-        f"  AND line->>'$.{ts_field}' <= '{to_ts}' "
-        f"LIMIT 200;"
-    )
-
+    bidx_path = pfc_path + '.bidx'
+    has_bidx = os.path.exists(bidx_path)
     env = {**os.environ, 'PFC_JSONL_BINARY': BINARY}
 
     t0 = time.time()
-    result = subprocess.run(
-        [DUCKDB, '-json', '-c', sql],
-        capture_output=True, timeout=30, env=env
-    )
+
+    if has_bidx:
+        # Full DuckDB extension path — uses BIDX for block-level skipping
+        sql = (
+            f"LOAD pfc; LOAD json; "
+            f"SELECT "
+            f"  line->>'$.{ts_field}' AS timestamp, "
+            f"  line->>'$.level'      AS level, "
+            f"  line->>'$.service'    AS service, "
+            f"  line->>'$.method'     AS method, "
+            f"  line->>'$.path'       AS path, "
+            f"  line->>'$.status'     AS status, "
+            f"  line->>'$.duration_ms' AS duration_ms, "
+            f"  line->>'$.message'    AS message "
+            f"FROM read_pfc_jsonl('{pfc_path}') "
+            f"WHERE line->>'$.{ts_field}' >= '{from_ts}' "
+            f"  AND line->>'$.{ts_field}' <= '{to_ts}' "
+            f"LIMIT 200;"
+        )
+        result = subprocess.run(
+            [DUCKDB, '-json', '-c', sql],
+            capture_output=True, timeout=30, env=env
+        )
+    else:
+        # Fallback: pfc_jsonl query (CLI-based, uses embedded index in v5.6.5)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_jsonl = os.path.join(tmpdir, 'out.jsonl')
+            result_query = subprocess.run(
+                [BINARY, 'query', pfc_path, '--from', from_ts, '--to', to_ts, '--out', out_jsonl],
+                capture_output=True, timeout=30
+            )
+            if result_query.returncode != 0:
+                stderr = result_query.stderr.decode('utf-8', errors='replace')[:400]
+                return jsonify({'error': 'Query failed: ' + stderr}), 500
+
+            # Run DuckDB SQL on extracted JSONL for display
+            sql = (
+                f"LOAD json; "
+                f"SELECT "
+                f"  json->>'$.{ts_field}' AS timestamp, "
+                f"  json->>'$.level'      AS level, "
+                f"  json->>'$.service'    AS service, "
+                f"  json->>'$.method'     AS method, "
+                f"  json->>'$.path'       AS path, "
+                f"  json->>'$.status'     AS status, "
+                f"  json->>'$.duration_ms' AS duration_ms, "
+                f"  json->>'$.message'    AS message "
+                f"FROM read_ndjson_auto('{out_jsonl}', columns={{json: 'JSON'}}) "
+                f"LIMIT 200;"
+            )
+            result = subprocess.run(
+                [DUCKDB, '-json', '-c', sql],
+                capture_output=True, timeout=30, env=env
+            )
+
     elapsed_ms = int((time.time() - t0) * 1000)
 
     if result.returncode != 0:
@@ -281,12 +318,14 @@ def query():
 
     # If empty result — run a debug sample to diagnose
     if len(rows) == 0:
-        sql_sample = (
-            f"LOAD pfc; LOAD json; "
-            f"SELECT line->>'$.{ts_field}' AS ts_value "
+        sample_sql = (
+            f"LOAD pfc; LOAD json; SELECT line->>'$.{ts_field}' AS ts_value "
             f"FROM read_pfc_jsonl('{pfc_path}') LIMIT 3;"
+        ) if has_bidx else (
+            f"SELECT '{from_ts}' AS queried_from, '{to_ts}' AS queried_to, "
+            f"'no_bidx_fallback_used' AS mode;"
         )
-        r2 = subprocess.run([DUCKDB, '-json', '-c', sql_sample],
+        r2 = subprocess.run([DUCKDB, '-json', '-c', sample_sql],
                             capture_output=True, timeout=30, env=env)
         try:
             sample = json.loads(r2.stdout.decode('utf-8'))
@@ -306,6 +345,7 @@ def query():
         'debug':       debug,
         'query_from':  from_ts,
         'query_to':    to_ts,
+        'engine':      'duckdb_extension' if has_bidx else 'pfc_query_cli',
     })
 
 

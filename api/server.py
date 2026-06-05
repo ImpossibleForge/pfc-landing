@@ -243,58 +243,95 @@ def query():
     pfc_path = session['path']
     ts_field = session['ts_field']
 
-    # Use pfc_jsonl query CLI directly — works with v5.6.5 native BIDX index.
-    # The DuckDB community extension targets v3.4 CLI syntax and is not compatible
-    # with the v5.6.5 Rust rewrite. Showcase the DuckDB extension as a desktop option.
+    bidx_path = pfc_path + '.bidx'
+    has_bidx  = os.path.exists(bidx_path)
+    env       = {**os.environ, 'PFC_JSONL_BINARY': BINARY}
+
+    def clean_ts(ts):
+        return ts.split('.')[0].rstrip('Z') + 'Z' if '.' in ts else ts
+
     t0 = time.time()
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        out_jsonl = os.path.join(tmpdir, 'out.jsonl')
-
-        # Strip milliseconds from ISO string if present — pfc_jsonl query is strict
-        def clean_ts(ts):
-            return ts.split('.')[0].rstrip('Z') + 'Z' if '.' in ts else ts
-
-        q_result = subprocess.run(
-            [BINARY, 'query', pfc_path,
-             '--from', clean_ts(from_ts),
-             '--to',   clean_ts(to_ts),
-             '--out',  out_jsonl],
-            capture_output=True, timeout=60
+    if has_bidx:
+        # DuckDB extension path — uses BIDX block-level index + read_pfc_jsonl()
+        sql = (
+            f"LOAD pfc; LOAD json; "
+            f"SELECT "
+            f"  line->>'$.{ts_field}'    AS timestamp, "
+            f"  line->>'$.level'         AS level, "
+            f"  line->>'$.service'       AS service, "
+            f"  line->>'$.method'        AS method, "
+            f"  line->>'$.path'          AS path, "
+            f"  line->>'$.status'        AS status, "
+            f"  line->>'$.duration_ms'   AS duration_ms, "
+            f"  line->>'$.message'       AS message "
+            f"FROM read_pfc_jsonl('{pfc_path}') "
+            f"WHERE line->>'$.{ts_field}' >= '{clean_ts(from_ts)}' "
+            f"  AND line->>'$.{ts_field}' <= '{clean_ts(to_ts)}' "
+            f"LIMIT 200;"
         )
+        result = subprocess.run(
+            [DUCKDB, '-json', '-c', sql],
+            capture_output=True, timeout=60, env=env
+        )
+        elapsed_ms = int((time.time() - t0) * 1000)
 
-        if q_result.returncode != 0:
-            stderr = q_result.stderr.decode('utf-8', errors='replace')[:400]
-            return jsonify({'error': 'Query failed: ' + stderr}), 500
+        if result.returncode != 0:
+            # Fall through to CLI path on extension failure
+            has_bidx = False
 
-        # Parse extracted JSONL into rows
+    if not has_bidx:
+        # Fallback: pfc_jsonl query CLI (works without .bidx, embedded index in v5.6.5)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_jsonl = os.path.join(tmpdir, 'out.jsonl')
+            q_result = subprocess.run(
+                [BINARY, 'query', pfc_path,
+                 '--from', clean_ts(from_ts),
+                 '--to',   clean_ts(to_ts),
+                 '--out',  out_jsonl],
+                capture_output=True, timeout=60
+            )
+            if q_result.returncode != 0:
+                stderr = q_result.stderr.decode('utf-8', errors='replace')[:400]
+                return jsonify({'error': 'Query failed: ' + stderr}), 500
+
+            elapsed_ms = int((time.time() - t0) * 1000)
+
+            rows = []
+            if os.path.exists(out_jsonl):
+                with open(out_jsonl, encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            row = json.loads(line)
+                            ts_val = str(row.get(ts_field, ''))
+                            if ts_val >= from_ts[:19] and ts_val <= to_ts[:19] + 'Z':
+                                rows.append(row)
+                        except Exception:
+                            pass
+            rows = rows[:200]
+
+        return jsonify({
+            'rows': rows, 'row_count': len(rows),
+            'elapsed_ms': elapsed_ms, 'ts_field': ts_field,
+            'expires_in': max(0, int(session['expires'] - time.time())),
+            'debug': {}, 'query_from': from_ts, 'query_to': to_ts,
+            'engine': 'pfc_query_cli',
+        })
+
+    # DuckDB path result
+    try:
+        rows = json.loads(result.stdout.decode('utf-8'))
+    except json.JSONDecodeError:
         rows = []
-        if os.path.exists(out_jsonl):
-            with open(out_jsonl, encoding='utf-8') as f:
-                for line in f:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    try:
-                        row = json.loads(line)
-                        # Block-level BIDX may include rows from adjacent blocks.
-                        # Apply exact row-level timestamp filter here.
-                        ts_val = str(row.get(ts_field, ''))
-                        if ts_val >= from_ts[:19] and ts_val <= to_ts[:19] + 'Z':
-                            rows.append(row)
-                    except Exception:
-                        pass
-        rows = rows[:200]
-
-    elapsed_ms = int((time.time() - t0) * 1000)
 
     expires_in = max(0, int(session['expires'] - time.time()))
     debug = {}
 
-    # If empty result — show CLI stderr as hint
     if len(rows) == 0:
-        debug['cli_stderr'] = q_result.stderr.decode('utf-8', errors='replace')[:300]
-        debug['query_cmd'] = f"pfc_jsonl query ... --from {from_ts} --to {to_ts}"
+        debug['duckdb_stderr'] = result.stderr.decode('utf-8', errors='replace')[:300]
 
     return jsonify({
         'rows':        rows,
@@ -305,7 +342,7 @@ def query():
         'debug':       debug,
         'query_from':  from_ts,
         'query_to':    to_ts,
-        'engine':      'pfc_query_bidx',
+        'engine': 'duckdb_extension',
     })
 
 

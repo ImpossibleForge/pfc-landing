@@ -222,11 +222,12 @@ def query():
     pfc_path = session['path']
     ts_field = session['ts_field']
 
+    # ISO timestamps sort lexicographically — string comparison is safe and avoids
+    # DuckDB TIMESTAMP literal parsing issues with T/Z/ms notation.
     sql = (
         f"LOAD pfc; "
         f"SELECT * FROM read_pfc('{pfc_path}') "
-        f"WHERE CAST(\"{ts_field}\" AS TIMESTAMP) "
-        f"BETWEEN TIMESTAMP '{from_ts}' AND TIMESTAMP '{to_ts}' "
+        f"WHERE \"{ts_field}\" >= '{from_ts}' AND \"{ts_field}\" <= '{to_ts}' "
         f"LIMIT 200;"
     )
 

@@ -273,11 +273,17 @@ def query():
             with open(out_jsonl, encoding='utf-8') as f:
                 for line in f:
                     line = line.strip()
-                    if line:
-                        try:
-                            rows.append(json.loads(line))
-                        except Exception:
-                            pass
+                    if not line:
+                        continue
+                    try:
+                        row = json.loads(line)
+                        # Block-level BIDX may include rows from adjacent blocks.
+                        # Apply exact row-level timestamp filter here.
+                        ts_val = str(row.get(ts_field, ''))
+                        if ts_val >= from_ts[:19] and ts_val <= to_ts[:19] + 'Z':
+                            rows.append(row)
+                    except Exception:
+                        pass
         rows = rows[:200]
 
     elapsed_ms = int((time.time() - t0) * 1000)

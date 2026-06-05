@@ -557,10 +557,12 @@ nav {
 
 .query-table-wrap {
   overflow-x: auto;
+  overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 6px;
   max-height: 320px;
-  overflow-y: auto;
+  max-width: 100%;
+  width: 100%;
 }
 .query-table {
   width: 100%;
@@ -833,52 +835,6 @@ footer a:hover { color: var(--white); }
         <a class="btn-download" id="dl-compress" href="#" download>⬇ Download .pfc file</a>
       </div>
 
-      <!-- ── QUERY PANEL ── -->
-      <div class="query-panel" id="query-panel">
-        <div class="query-divider">
-          <span>Query your compressed file</span>
-        </div>
-        <div class="query-session-bar">
-          <span class="query-session-label">Session active —</span>
-          <span id="query-countdown" class="query-countdown">15:00</span>
-          <span class="query-session-label">remaining · file auto-deleted after</span>
-        </div>
-        <div class="query-inputs">
-          <div class="query-field">
-            <label class="query-label">From</label>
-            <input type="datetime-local" id="q-from" class="query-dt">
-          </div>
-          <div class="query-field">
-            <label class="query-label">To</label>
-            <input type="datetime-local" id="q-to" class="query-dt">
-          </div>
-        </div>
-        <button class="btn-query" id="btn-query" onclick="runQuery()">
-          <span id="btn-query-inner">⚡ Query with DuckDB</span>
-        </button>
-        <div class="duckdb-badge">
-          <span class="duckdb-icon">🦆</span>
-          Query uses native BIDX index — no full decompression.
-          Want full SQL? Use our <a href="https://github.com/ImpossibleForge/pfc-duckdb" target="_blank" class="duckdb-link">DuckDB Community Extension</a>
-          — on the <a href="https://github.com/davidgasquez/awesome-duckdb" target="_blank" class="duckdb-link">DuckDB Awesome List ↗</a>
-        </div>
-        <div class="msg-error" id="err-query">
-          <span>⚠</span>
-          <span id="err-query-text">Query failed.</span>
-        </div>
-        <div class="query-results" id="query-results">
-          <div class="query-results-header">
-            <span class="results-header">✓ Query complete</span>
-            <span class="query-meta" id="query-meta"></span>
-          </div>
-          <div class="query-table-wrap">
-            <table class="query-table" id="query-table">
-              <thead id="query-thead"></thead>
-              <tbody id="query-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- ── DECOMPRESS PANEL ── -->
@@ -944,6 +900,51 @@ footer a:hover { color: var(--white); }
     </div>
 
   </div>
+
+  <!-- ── QUERY PANEL — full width below both panels ── -->
+  <div class="query-panel" id="query-panel">
+    <div class="query-divider"><span>Query your compressed file</span></div>
+    <div class="query-session-bar">
+      <span class="query-session-label">Session active —</span>
+      <span id="query-countdown" class="query-countdown">15:00</span>
+      <span class="query-session-label">remaining · file auto-deleted after timeout</span>
+    </div>
+    <div class="query-inputs">
+      <div class="query-field">
+        <label class="query-label">From</label>
+        <input type="datetime-local" id="q-from" class="query-dt">
+      </div>
+      <div class="query-field">
+        <label class="query-label">To</label>
+        <input type="datetime-local" id="q-to" class="query-dt">
+      </div>
+    </div>
+    <button class="btn-query" id="btn-query" onclick="runQuery()">
+      <span id="btn-query-inner">⚡ Query via BIDX — no full decompression</span>
+    </button>
+    <div class="duckdb-badge">
+      <span class="duckdb-icon">🦆</span>
+      Want full SQL on your logs? Use our
+      <a href="https://github.com/ImpossibleForge/pfc-duckdb" target="_blank" class="duckdb-link">DuckDB Community Extension</a>
+      — on the <a href="https://github.com/davidgasquez/awesome-duckdb" target="_blank" class="duckdb-link">DuckDB Awesome List ↗</a>
+    </div>
+    <div class="msg-error" id="err-query">
+      <span>⚠</span><span id="err-query-text">Query failed.</span>
+    </div>
+    <div class="query-results" id="query-results">
+      <div class="query-results-header">
+        <span class="results-header">✓ Query complete</span>
+        <span class="query-meta" id="query-meta"></span>
+      </div>
+      <div class="query-table-wrap">
+        <table class="query-table" id="query-table">
+          <thead id="query-thead"></thead>
+          <tbody id="query-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- FOOTER -->

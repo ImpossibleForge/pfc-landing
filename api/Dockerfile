@@ -19,8 +19,8 @@ RUN wget -q \
   && chmod +x /usr/local/bin/duckdb \
   && rm /tmp/duckdb.zip
 
-# Pre-install pfc community extension (cached in image, no runtime download needed)
-RUN duckdb -c "INSTALL pfc FROM community;" || true
+# Pre-install pfc community extension
+RUN duckdb -c "INSTALL pfc FROM community;"
 
 RUN mkdir -p /tmp/pfc_sessions
 

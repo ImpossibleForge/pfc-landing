@@ -22,8 +22,24 @@ SESSION_DIR = '/tmp/pfc_sessions'
 
 os.makedirs(SESSION_DIR, exist_ok=True)
 
-# {session_id: {"path": str, "expires": float, "ts_field": str}}
-_sessions: dict = {}
+# Sessions stored on filesystem — safe across gunicorn workers and restarts
+def _session_meta_path(sid: str) -> str:
+    return os.path.join(SESSION_DIR, sid + '.json')
+
+def _session_pfc_path(sid: str) -> str:
+    return os.path.join(SESSION_DIR, sid + '.pfc')
+
+def _write_session(sid: str, meta: dict):
+    with open(_session_meta_path(sid), 'w') as f:
+        json.dump(meta, f)
+
+def _read_session(sid: str) -> dict | None:
+    try:
+        with open(_session_meta_path(sid)) as f:
+            return json.load(f)
+    except Exception:
+        return None
+
 _lock = threading.Lock()
 
 TS_CANDIDATES = ['timestamp', 'ts', 'time', '@timestamp', 'date', 'datetime']
@@ -63,14 +79,17 @@ def _cleanup_loop():
     while True:
         time.sleep(60)
         now = time.time()
-        with _lock:
-            expired = [sid for sid, s in _sessions.items() if s['expires'] < now]
-            for sid in expired:
-                try:
-                    os.remove(_sessions[sid]['path'])
-                except OSError:
-                    pass
-                del _sessions[sid]
+        for fname in os.listdir(SESSION_DIR):
+            if not fname.endswith('.json'):
+                continue
+            sid = fname[:-5]
+            meta = _read_session(sid)
+            if meta and meta.get('expires', 0) < now:
+                for ext in ('.pfc', '.json'):
+                    try:
+                        os.remove(os.path.join(SESSION_DIR, sid + ext))
+                    except OSError:
+                        pass
 
 
 threading.Thread(target=_cleanup_loop, daemon=True).start()
@@ -113,20 +132,19 @@ def compress():
             stderr = result.stderr.decode('utf-8', errors='replace')[:300]
             return jsonify({'error': 'Compression failed: ' + stderr}), 500
 
-        # Save session copy
+        # Save session copy (filesystem — survives across workers)
         session_id   = str(uuid.uuid4())
-        session_path = os.path.join(SESSION_DIR, session_id + '.pfc')
+        session_path = _session_pfc_path(session_id)
         shutil.copy2(out_path, session_path)
         expires_at = time.time() + SESSION_TTL
 
-        with _lock:
-            _sessions[session_id] = {
-                'path':     session_path,
-                'expires':  expires_at,
-                'ts_field': ts_field,
-                'ts_min':   ts_min,
-                'ts_max':   ts_max,
-            }
+        _write_session(session_id, {
+            'path':     session_path,
+            'expires':  expires_at,
+            'ts_field': ts_field,
+            'ts_min':   ts_min,
+            'ts_max':   ts_max,
+        })
 
         orig_name     = f.filename or 'archive'
         download_name = orig_name + '.pfc'
@@ -210,8 +228,7 @@ def query():
        not re.fullmatch(r'[\d\-T:Z\+\.]{10,35}', to_ts):
         return jsonify({'error': 'Invalid timestamp format'}), 400
 
-    with _lock:
-        session = _sessions.get(session_id)
+    session = _read_session(session_id)
 
     if not session:
         return jsonify({'error': 'Session not found or expired'}), 404
@@ -296,14 +313,15 @@ def query():
 def session_info(session_id):
     if not re.fullmatch(r'[0-9a-f\-]{36}', session_id):
         return jsonify({'error': 'Invalid session_id'}), 400
-    with _lock:
-        session = _sessions.get(session_id)
+    session = _read_session(session_id)
     if not session or time.time() > session['expires']:
         return jsonify({'alive': False}), 200
     return jsonify({
         'alive':      True,
         'expires_in': max(0, int(session['expires'] - time.time())),
         'ts_field':   session['ts_field'],
+        'ts_min':     session.get('ts_min'),
+        'ts_max':     session.get('ts_max'),
     })
 
 

@@ -1277,14 +1277,16 @@ function renderQueryResults(data) {
 
   if (rows.length === 0) {
     document.getElementById('query-thead').innerHTML = '';
-    let msg = 'No results in this time range';
-    if (data.debug && data.debug.actual_ts_value) {
-      msg += ` — example timestamp in file: "${data.debug.actual_ts_value}" · queried: ${data.query_from} → ${data.query_to}`;
-    } else if (data.debug && data.debug.sample_rows && data.debug.sample_rows.length === 0) {
-      msg += ' — file appears empty (read_pfc returned 0 rows)';
-    }
+    const d = data.debug || {};
+    let msg = `No results for ${data.query_from?.slice(0,16)} → ${data.query_to?.slice(0,16)}`;
+    if (d.actual_ts_value)
+      msg += `<br>Example timestamp in file: <b>${d.actual_ts_value}</b>`;
+    else if (d.sample_rows && d.sample_rows.length === 0)
+      msg += '<br>File returned 0 rows — binary may not be found by extension';
+    if (d.sample_error || d.stderr)
+      msg += `<br><span style="color:var(--red)">${d.sample_error || d.stderr}</span>`;
     document.getElementById('query-tbody').innerHTML =
-      `<tr><td colspan="99" style="color:var(--muted);text-align:center;padding:20px;font-size:12px">${msg}</td></tr>`;
+      `<tr><td colspan="99" style="color:var(--muted);text-align:center;padding:20px;font-size:12px;line-height:1.8">${msg}</td></tr>`;
   } else {
     const cols = Object.keys(rows[0]);
     document.getElementById('query-thead').innerHTML =

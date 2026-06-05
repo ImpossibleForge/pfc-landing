@@ -4,11 +4,12 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y wget unzip && rm -rf /var/lib/apt/lists/*
 
-# pfc_jsonl binary
+# pfc_jsonl binary — also symlinked to /usr/local/bin for DuckDB extension discovery
 RUN wget -q \
     https://github.com/ImpossibleForge/pfc-jsonl/releases/latest/download/pfc_jsonl-linux-x64 \
     -O /app/pfc_jsonl \
-  && chmod +x /app/pfc_jsonl
+  && chmod +x /app/pfc_jsonl \
+  && ln -s /app/pfc_jsonl /usr/local/bin/pfc_jsonl
 
 # DuckDB CLI
 RUN wget -q \
@@ -31,4 +32,4 @@ COPY server.py .
 ENV PORT=8080
 EXPOSE 8080
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--timeout", "180", "--workers", "2", "server:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--timeout", "180", "--workers", "1", "server:app"]

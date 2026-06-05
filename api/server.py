@@ -222,19 +222,31 @@ def query():
     pfc_path = session['path']
     ts_field = session['ts_field']
 
-    # ISO timestamps sort lexicographically — string comparison is safe and avoids
-    # DuckDB TIMESTAMP literal parsing issues with T/Z/ms notation.
+    # read_pfc_jsonl() returns one 'line' column (raw JSON string per row).
+    # Use JSON path extraction for field access and filtering.
     sql = (
-        f"LOAD pfc; "
-        f"SELECT * FROM read_pfc('{pfc_path}') "
-        f"WHERE \"{ts_field}\" >= '{from_ts}' AND \"{ts_field}\" <= '{to_ts}' "
+        f"LOAD pfc; LOAD json; "
+        f"SELECT "
+        f"  line->>'$.timestamp' AS timestamp, "
+        f"  line->>'$.level'     AS level, "
+        f"  line->>'$.service'   AS service, "
+        f"  line->>'$.method'    AS method, "
+        f"  line->>'$.path'      AS path, "
+        f"  line->>'$.status'    AS status, "
+        f"  line->>'$.duration_ms' AS duration_ms, "
+        f"  line->>'$.message'   AS message "
+        f"FROM read_pfc_jsonl('{pfc_path}') "
+        f"WHERE line->>'$.{ts_field}' >= '{from_ts}' "
+        f"  AND line->>'$.{ts_field}' <= '{to_ts}' "
         f"LIMIT 200;"
     )
+
+    env = {**os.environ, 'PFC_JSONL_BINARY': BINARY}
 
     t0 = time.time()
     result = subprocess.run(
         [DUCKDB, '-json', '-c', sql],
-        capture_output=True, timeout=30
+        capture_output=True, timeout=30, env=env
     )
     elapsed_ms = int((time.time() - t0) * 1000)
 
@@ -252,16 +264,21 @@ def query():
 
     # If empty result — run a debug sample to diagnose
     if len(rows) == 0:
-        sql_sample = f"LOAD pfc; SELECT * FROM read_pfc('{pfc_path}') LIMIT 3;"
+        sql_sample = (
+            f"LOAD pfc; LOAD json; "
+            f"SELECT line->>'$.{ts_field}' AS ts_value "
+            f"FROM read_pfc_jsonl('{pfc_path}') LIMIT 3;"
+        )
         r2 = subprocess.run([DUCKDB, '-json', '-c', sql_sample],
-                            capture_output=True, timeout=30)
+                            capture_output=True, timeout=30, env=env)
         try:
             sample = json.loads(r2.stdout.decode('utf-8'))
             debug['sample_rows'] = sample
             if sample:
-                debug['actual_ts_value'] = sample[0].get(ts_field, 'field not found')
+                debug['actual_ts_value'] = sample[0].get('ts_value', 'field not found')
         except Exception:
-            debug['sample_error'] = r2.stderr.decode('utf-8', errors='replace')[:200]
+            debug['sample_error'] = r2.stderr.decode('utf-8', errors='replace')[:300]
+        debug['stderr'] = result.stderr.decode('utf-8', errors='replace')[:300]
 
     return jsonify({
         'rows':        rows,

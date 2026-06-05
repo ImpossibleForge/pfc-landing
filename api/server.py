@@ -248,6 +248,20 @@ def query():
         rows = []
 
     expires_in = max(0, int(session['expires'] - time.time()))
+    debug = {}
+
+    # If empty result — run a debug sample to diagnose
+    if len(rows) == 0:
+        sql_sample = f"LOAD pfc; SELECT * FROM read_pfc('{pfc_path}') LIMIT 3;"
+        r2 = subprocess.run([DUCKDB, '-json', '-c', sql_sample],
+                            capture_output=True, timeout=30)
+        try:
+            sample = json.loads(r2.stdout.decode('utf-8'))
+            debug['sample_rows'] = sample
+            if sample:
+                debug['actual_ts_value'] = sample[0].get(ts_field, 'field not found')
+        except Exception:
+            debug['sample_error'] = r2.stderr.decode('utf-8', errors='replace')[:200]
 
     return jsonify({
         'rows':        rows,
@@ -255,6 +269,9 @@ def query():
         'elapsed_ms':  elapsed_ms,
         'ts_field':    ts_field,
         'expires_in':  expires_in,
+        'debug':       debug,
+        'query_from':  from_ts,
+        'query_to':    to_ts,
     })
 
 

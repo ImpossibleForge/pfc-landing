@@ -1130,13 +1130,15 @@ async function runCompress() {
       throw new Error(msg);
     }
     // Capture session headers before consuming body
-    const sid      = resp.headers.get('X-Session-Id');
-    const exp      = resp.headers.get('X-Session-Expires');
-    const tsField  = resp.headers.get('X-Ts-Field');
+    const sid     = resp.headers.get('X-Session-Id');
+    const exp     = resp.headers.get('X-Session-Expires');
+    const tsField = resp.headers.get('X-Ts-Field');
+    const tsMin   = resp.headers.get('X-Ts-Min');
+    const tsMax   = resp.headers.get('X-Ts-Max');
     const blob = await resp.blob();
     doneProg('compress');
     showCompressResults(compressFile.size, blob.size, Date.now() - t0, blob, compressFile.name);
-    if (sid) activateSession(sid, parseInt(exp), tsField);
+    if (sid) activateSession(sid, parseInt(exp), tsField, tsMin, tsMax);
   } catch(e) {
     doneProg('compress');
     showErr('compress', e.message || 'Connection failed — is the API running?');
@@ -1186,7 +1188,7 @@ async function runDecompress() {
 }
 
 // ── SESSION & QUERY ─────────────────────────────────────────────────────────
-function activateSession(sid, expiresUnix, tsField) {
+function activateSession(sid, expiresUnix, tsField, tsMin, tsMax) {
   sessionId      = sid;
   sessionExpires = expiresUnix;
   sessionTsField = tsField || 'timestamp';
@@ -1194,11 +1196,21 @@ function activateSession(sid, expiresUnix, tsField) {
   const panel = document.getElementById('query-panel');
   panel.classList.add('visible');
 
-  // Pre-fill from/to with a 1-hour window ending at now
-  const now   = new Date();
-  const from  = new Date(now.getTime() - 60 * 60 * 1000);
-  document.getElementById('q-to').value   = toLocalDT(now);
-  document.getElementById('q-from').value = toLocalDT(from);
+  // Pre-fill from/to: use actual file range if available, else last 24h
+  if (tsMin && tsMax) {
+    // Pick a ~1-hour window starting 1/3 into the file range
+    const minMs = new Date(isNaN(tsMin) ? tsMin : parseInt(tsMin) * 1000).getTime();
+    const maxMs = new Date(isNaN(tsMax) ? tsMax : parseInt(tsMax) * 1000).getTime();
+    const fromMs = minMs + (maxMs - minMs) * 0.33;
+    const toMs   = fromMs + Math.min(3600000, (maxMs - minMs) * 0.1);
+    document.getElementById('q-from').value = toLocalDT(new Date(fromMs));
+    document.getElementById('q-to').value   = toLocalDT(new Date(toMs));
+  } else {
+    const now  = new Date();
+    const from = new Date(now.getTime() - 60 * 60 * 1000);
+    document.getElementById('q-from').value = toLocalDT(from);
+    document.getElementById('q-to').value   = toLocalDT(now);
+  }
 
   startCountdown();
 }

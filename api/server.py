@@ -11,7 +11,7 @@ from flask import Flask, after_this_request, request, send_file, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app, expose_headers=['X-Session-Id', 'X-Session-Expires', 'X-Ts-Field'])
+CORS(app, expose_headers=['X-Session-Id', 'X-Session-Expires', 'X-Ts-Field', 'X-Ts-Min', 'X-Ts-Max'])
 
 BINARY  = '/app/pfc_jsonl'
 DUCKDB  = '/usr/local/bin/duckdb'
@@ -39,6 +39,24 @@ def _detect_ts_field(jsonl_bytes: bytes) -> str:
     except Exception:
         pass
     return 'timestamp'
+
+
+def _detect_ts_range(jsonl_bytes: bytes, ts_field: str) -> tuple:
+    """Sample first+last 20 lines to find min/max timestamp strings."""
+    lines = [l for l in jsonl_bytes.split(b'\n') if l.strip()]
+    sample = lines[:20] + lines[-20:]
+    values = []
+    for l in sample:
+        try:
+            v = json.loads(l).get(ts_field)
+            if v is not None:
+                values.append(str(v))
+        except Exception:
+            pass
+    if not values:
+        return None, None
+    values.sort()
+    return values[0], values[-1]
 
 
 def _cleanup_loop():
@@ -77,6 +95,7 @@ def compress():
         return jsonify({'error': f'File too large. Maximum is {MAX_MB} MB.'}), 413
 
     ts_field = _detect_ts_field(data)
+    ts_min, ts_max = _detect_ts_range(data, ts_field)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         in_path  = os.path.join(tmpdir, 'input.jsonl')
@@ -102,9 +121,11 @@ def compress():
 
         with _lock:
             _sessions[session_id] = {
-                'path': session_path,
-                'expires': expires_at,
+                'path':     session_path,
+                'expires':  expires_at,
                 'ts_field': ts_field,
+                'ts_min':   ts_min,
+                'ts_max':   ts_max,
             }
 
         orig_name     = f.filename or 'archive'
@@ -119,6 +140,10 @@ def compress():
         response.headers['X-Session-Id']      = session_id
         response.headers['X-Session-Expires'] = str(int(expires_at))
         response.headers['X-Ts-Field']        = ts_field
+        if ts_min:
+            response.headers['X-Ts-Min'] = ts_min
+        if ts_max:
+            response.headers['X-Ts-Max'] = ts_max
         return response
 
 

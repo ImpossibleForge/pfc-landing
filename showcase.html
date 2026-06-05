@@ -437,6 +437,159 @@ nav {
   border-color: var(--green);
 }
 
+/* ── QUERY PANEL ── */
+.query-panel {
+  display: none;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 4px;
+}
+.query-panel.visible { display: flex; }
+
+.query-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.query-divider::before,
+.query-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.query-session-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  background: rgba(79,195,247,0.06);
+  border: 1px solid rgba(79,195,247,0.15);
+  border-radius: 5px;
+  padding: 8px 12px;
+}
+.query-session-label { color: var(--muted); }
+.query-countdown {
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.query-countdown.urgent { color: var(--red); }
+
+.query-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.query-field { display: flex; flex-direction: column; gap: 5px; }
+.query-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.query-dt {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--white);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 9px 12px;
+  width: 100%;
+  colorscheme: dark;
+}
+.query-dt:focus { outline: none; border-color: var(--accent); }
+
+.btn-query {
+  background: var(--bg4);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 12px 18px;
+  border: 1px solid rgba(79,195,247,0.3);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+.btn-query:hover:not(:disabled) {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.btn-query:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.duckdb-badge {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.duckdb-icon { font-size: 14px; }
+.duckdb-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+.duckdb-link:hover { text-decoration: underline; }
+
+.query-results {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+.query-results.visible { display: flex; }
+.query-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.query-meta { font-size: 12px; color: var(--muted); }
+
+.query-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.query-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.query-table th {
+  background: var(--bg4);
+  color: var(--accent);
+  font-weight: 700;
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  white-space: nowrap;
+}
+.query-table td {
+  padding: 7px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--white);
+  white-space: nowrap;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.query-table tr:last-child td { border-bottom: none; }
+.query-table tr:hover td { background: rgba(255,255,255,0.03); }
+
 /* ── LOGTYPES ── */
 .logtypes {
   position: relative;
@@ -679,6 +832,52 @@ footer a:hover { color: var(--white); }
         </div>
         <a class="btn-download" id="dl-compress" href="#" download>⬇ Download .pfc file</a>
       </div>
+
+      <!-- ── QUERY PANEL ── -->
+      <div class="query-panel" id="query-panel">
+        <div class="query-divider">
+          <span>Query your compressed file</span>
+        </div>
+        <div class="query-session-bar">
+          <span class="query-session-label">Session active —</span>
+          <span id="query-countdown" class="query-countdown">15:00</span>
+          <span class="query-session-label">remaining · file auto-deleted after</span>
+        </div>
+        <div class="query-inputs">
+          <div class="query-field">
+            <label class="query-label">From</label>
+            <input type="datetime-local" id="q-from" class="query-dt">
+          </div>
+          <div class="query-field">
+            <label class="query-label">To</label>
+            <input type="datetime-local" id="q-to" class="query-dt">
+          </div>
+        </div>
+        <button class="btn-query" id="btn-query" onclick="runQuery()">
+          <span id="btn-query-inner">⚡ Query with DuckDB</span>
+        </button>
+        <div class="duckdb-badge">
+          <span class="duckdb-icon">🦆</span>
+          Powered by <a href="https://github.com/ImpossibleForge/pfc-duckdb" target="_blank" class="duckdb-link">PFC-JSONL DuckDB Community Extension</a>
+          — official extension on the <a href="https://github.com/duckdb/duckdb-awesome?tab=readme-ov-file#extensions" target="_blank" class="duckdb-link">DuckDB Awesome List ↗</a>
+        </div>
+        <div class="msg-error" id="err-query">
+          <span>⚠</span>
+          <span id="err-query-text">Query failed.</span>
+        </div>
+        <div class="query-results" id="query-results">
+          <div class="query-results-header">
+            <span class="results-header">✓ Query complete</span>
+            <span class="query-meta" id="query-meta"></span>
+          </div>
+          <div class="query-table-wrap">
+            <table class="query-table" id="query-table">
+              <thead id="query-thead"></thead>
+              <tbody id="query-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ── DECOMPRESS PANEL ── -->
@@ -768,6 +967,10 @@ const MAX_MB = 100;
 // ── STATE ──────────────────────────────────────────────────────────────────
 let compressFile   = null;
 let decompressFile = null;
+let sessionId      = null;
+let sessionExpires = null;
+let sessionTsField = null;
+let countdownTimer = null;
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
 function fmtBytes(b) {
@@ -926,9 +1129,14 @@ async function runCompress() {
       try { const j = await resp.json(); if (j.error) msg = j.error; } catch(_) {}
       throw new Error(msg);
     }
+    // Capture session headers before consuming body
+    const sid      = resp.headers.get('X-Session-Id');
+    const exp      = resp.headers.get('X-Session-Expires');
+    const tsField  = resp.headers.get('X-Ts-Field');
     const blob = await resp.blob();
     doneProg('compress');
     showCompressResults(compressFile.size, blob.size, Date.now() - t0, blob, compressFile.name);
+    if (sid) activateSession(sid, parseInt(exp), tsField);
   } catch(e) {
     doneProg('compress');
     showErr('compress', e.message || 'Connection failed — is the API running?');
@@ -975,6 +1183,100 @@ async function runDecompress() {
     btn.disabled = false;
     btn.innerHTML = '<span>⬆ Decompress File</span>';
   }
+}
+
+// ── SESSION & QUERY ─────────────────────────────────────────────────────────
+function activateSession(sid, expiresUnix, tsField) {
+  sessionId      = sid;
+  sessionExpires = expiresUnix;
+  sessionTsField = tsField || 'timestamp';
+
+  const panel = document.getElementById('query-panel');
+  panel.classList.add('visible');
+
+  // Pre-fill from/to with a 1-hour window ending at now
+  const now   = new Date();
+  const from  = new Date(now.getTime() - 60 * 60 * 1000);
+  document.getElementById('q-to').value   = toLocalDT(now);
+  document.getElementById('q-from').value = toLocalDT(from);
+
+  startCountdown();
+}
+
+function toLocalDT(d) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function startCountdown() {
+  if (countdownTimer) clearInterval(countdownTimer);
+  const el = document.getElementById('query-countdown');
+  countdownTimer = setInterval(() => {
+    const left = Math.max(0, sessionExpires - Math.floor(Date.now() / 1000));
+    const m    = String(Math.floor(left / 60)).padStart(2, '0');
+    const s    = String(left % 60).padStart(2, '0');
+    el.textContent = `${m}:${s}`;
+    el.classList.toggle('urgent', left < 120);
+    if (left === 0) {
+      clearInterval(countdownTimer);
+      document.getElementById('query-panel').classList.remove('visible');
+      sessionId = null;
+    }
+  }, 1000);
+}
+
+async function runQuery() {
+  if (!sessionId) return;
+  hideErr('query');
+  document.getElementById('query-results').classList.remove('visible');
+
+  const fromVal = document.getElementById('q-from').value;
+  const toVal   = document.getElementById('q-to').value;
+  if (!fromVal || !toVal) { showErr('query', 'Please set both From and To timestamps.'); return; }
+
+  const fromIso = new Date(fromVal).toISOString();
+  const toIso   = new Date(toVal).toISOString();
+
+  const btn = document.getElementById('btn-query');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span><span>Querying…</span>';
+
+  try {
+    const resp = await fetch(API_BASE + '/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, from_ts: fromIso, to_ts: toIso })
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Query failed');
+    renderQueryResults(data);
+  } catch(e) {
+    showErr('query', e.message || 'Query failed');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>⚡ Query with DuckDB</span>';
+  }
+}
+
+function renderQueryResults(data) {
+  const rows  = data.rows || [];
+  const meta  = document.getElementById('query-meta');
+  meta.textContent = `${data.row_count} rows · ${data.elapsed_ms} ms · field: ${data.ts_field}`;
+
+  if (rows.length === 0) {
+    document.getElementById('query-thead').innerHTML = '';
+    document.getElementById('query-tbody').innerHTML =
+      '<tr><td colspan="99" style="color:var(--muted);text-align:center;padding:20px">No results in this time range</td></tr>';
+  } else {
+    const cols = Object.keys(rows[0]);
+    document.getElementById('query-thead').innerHTML =
+      '<tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr>';
+    document.getElementById('query-tbody').innerHTML = rows.map(row =>
+      '<tr>' + cols.map(c => `<td title="${String(row[c] ?? '')}">${String(row[c] ?? '')}</td>`).join('') + '</tr>'
+    ).join('');
+  }
+
+  document.getElementById('query-results').classList.add('visible');
 }
 
 // ── HAMBURGER ───────────────────────────────────────────────────────────────

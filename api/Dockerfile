@@ -11,16 +11,17 @@ RUN wget -q \
   && chmod +x /app/pfc_jsonl \
   && ln -s /app/pfc_jsonl /usr/local/bin/pfc_jsonl
 
-# DuckDB CLI
+# DuckDB CLI — latest release (community extensions only work with current version)
 RUN wget -q \
-    https://github.com/duckdb/duckdb/releases/download/v1.2.2/duckdb_cli-linux-amd64.zip \
+    https://github.com/duckdb/duckdb/releases/latest/download/duckdb_cli-linux-amd64.zip \
     -O /tmp/duckdb.zip \
   && unzip -q /tmp/duckdb.zip -d /usr/local/bin \
   && chmod +x /usr/local/bin/duckdb \
-  && rm /tmp/duckdb.zip
+  && rm /tmp/duckdb.zip \
+  && duckdb --version
 
 # Pre-install pfc community extension
-RUN duckdb -c "INSTALL pfc FROM community;"
+RUN duckdb -c "INSTALL pfc FROM community;" && echo "pfc extension installed"
 
 RUN mkdir -p /tmp/pfc_sessions
 

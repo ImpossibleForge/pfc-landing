@@ -242,7 +242,7 @@ def query():
     # read_pfc_jsonl() returns one 'line' column (raw JSON string per row).
     # Use JSON path extraction for field access and filtering.
     sql = (
-        f"INSTALL pfc FROM community; LOAD pfc; LOAD json; "
+        f"LOAD pfc; LOAD json; "
         f"SELECT "
         f"  line->>'$.timestamp' AS timestamp, "
         f"  line->>'$.level'     AS level, "
@@ -282,7 +282,7 @@ def query():
     # If empty result — run a debug sample to diagnose
     if len(rows) == 0:
         sql_sample = (
-            f"INSTALL pfc FROM community; LOAD pfc; LOAD json; "
+            f"LOAD pfc; LOAD json; "
             f"SELECT line->>'$.{ts_field}' AS ts_value "
             f"FROM read_pfc_jsonl('{pfc_path}') LIMIT 3;"
         )

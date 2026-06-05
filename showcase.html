@@ -592,6 +592,76 @@ nav {
 .query-table tr:last-child td { border-bottom: none; }
 .query-table tr:hover td { background: rgba(255,255,255,0.03); }
 
+/* ── QUERY COMING SOON ── */
+.query-coming {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px 32px;
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 28px 32px;
+  margin: 0 40px 32px;
+}
+.qc-left { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.qc-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
+  background: var(--accent-glow);
+  border: 1px solid rgba(79,195,247,0.25);
+  border-radius: 4px;
+  padding: 4px 10px;
+  width: fit-content;
+}
+.qc-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--white);
+}
+.qc-desc { font-size: 13px; color: var(--muted); line-height: 1.7; max-width: 560px; }
+.qc-example {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.qc-ex-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); }
+.qc-example code {
+  font-size: 12px;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+.qc-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-width: 160px;
+  text-align: center;
+  padding-top: 8px;
+}
+.qc-duck { font-size: 40px; }
+.qc-duck-text { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+@media (max-width: 768px) {
+  .query-coming { flex-direction: column; margin: 0 20px 32px; padding: 24px 20px; }
+  .qc-right { align-items: flex-start; text-align: left; }
+}
+
 /* ── LOGTYPES ── */
 .logtypes {
   position: relative;
@@ -901,46 +971,26 @@ footer a:hover { color: var(--white); }
 
   </div>
 
-  <!-- ── QUERY PANEL — full width below both panels ── -->
-  <div class="query-panel" id="query-panel">
-    <div class="query-divider"><span>Query your compressed file</span></div>
-    <div class="query-session-bar">
-      <span class="query-session-label">Session active —</span>
-      <span id="query-countdown" class="query-countdown">15:00</span>
-      <span class="query-session-label">remaining · file auto-deleted after timeout</span>
-    </div>
-    <div class="query-inputs">
-      <div class="query-field">
-        <label class="query-label">From</label>
-        <input type="datetime-local" id="q-from" class="query-dt">
+  <!-- ── QUERY COMING SOON ── -->
+  <div class="query-coming">
+    <div class="qc-left">
+      <div class="qc-badge">Coming Soon</div>
+      <div class="qc-title">Query your archive — without decompressing</div>
+      <div class="qc-desc">
+        Once compressed, PFC-JSONL lets you query any 1-hour window directly from the cold archive
+        using the BIDX block index. No full decompression. No restore step.
       </div>
-      <div class="query-field">
-        <label class="query-label">To</label>
-        <input type="datetime-local" id="q-to" class="query-dt">
+      <div class="qc-example">
+        <span class="qc-ex-label">Example</span>
+        <code>pfc_jsonl query archive.pfc --from 2026-06-04T14:00Z --to 2026-06-04T15:00Z --out out.jsonl</code>
       </div>
     </div>
-    <button class="btn-query" id="btn-query" onclick="runQuery()">
-      <span id="btn-query-inner">⚡ Query via BIDX — no full decompression</span>
-    </button>
-    <div class="duckdb-badge">
-      <span class="duckdb-icon">🦆</span>
-      Powered by our official
-      <a href="https://github.com/ImpossibleForge/pfc-duckdb" target="_blank" class="duckdb-link">DuckDB Community Extension</a>
-      — on the <a href="https://github.com/davidgasquez/awesome-duckdb" target="_blank" class="duckdb-link">DuckDB Awesome List ↗</a>
-    </div>
-    <div class="msg-error" id="err-query">
-      <span>⚠</span><span id="err-query-text">Query failed.</span>
-    </div>
-    <div class="query-results" id="query-results">
-      <div class="query-results-header">
-        <span class="results-header">✓ Query complete</span>
-        <span class="query-meta" id="query-meta"></span>
-      </div>
-      <div class="query-table-wrap">
-        <table class="query-table" id="query-table">
-          <thead id="query-thead"></thead>
-          <tbody id="query-tbody"></tbody>
-        </table>
+    <div class="qc-right">
+      <div class="qc-duck">🦆</div>
+      <div class="qc-duck-text">
+        Full SQL on your .pfc files via our official<br>
+        <a href="https://github.com/ImpossibleForge/pfc-duckdb" target="_blank" class="duckdb-link">DuckDB Community Extension</a><br>
+        <a href="https://github.com/davidgasquez/awesome-duckdb" target="_blank" class="duckdb-link" style="font-size:11px;opacity:0.7">on the DuckDB Awesome List ↗</a>
       </div>
     </div>
   </div>
@@ -969,10 +1019,10 @@ const MAX_MB = 100;
 // ── STATE ──────────────────────────────────────────────────────────────────
 let compressFile   = null;
 let decompressFile = null;
+// Session vars kept for future query feature
 let sessionId      = null;
 let sessionExpires = null;
 let sessionTsField = null;
-let countdownTimer = null;
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
 function fmtBytes(b) {
@@ -1189,116 +1239,11 @@ async function runDecompress() {
   }
 }
 
-// ── SESSION & QUERY ─────────────────────────────────────────────────────────
-function activateSession(sid, expiresUnix, tsField, tsMin, tsMax) {
+// Session captured for future live query feature
+function activateSession(sid, expiresUnix, tsField) {
   sessionId      = sid;
   sessionExpires = expiresUnix;
   sessionTsField = tsField || 'timestamp';
-
-  const panel = document.getElementById('query-panel');
-  panel.classList.add('visible');
-
-  // Pre-fill from/to: use actual file range if available, else last 24h
-  if (tsMin && tsMax) {
-    // Pick a ~1-hour window starting 1/3 into the file range
-    const minMs = new Date(isNaN(tsMin) ? tsMin : parseInt(tsMin) * 1000).getTime();
-    const maxMs = new Date(isNaN(tsMax) ? tsMax : parseInt(tsMax) * 1000).getTime();
-    const fromMs = minMs + (maxMs - minMs) * 0.33;
-    const toMs   = fromMs + Math.min(3600000, (maxMs - minMs) * 0.1);
-    document.getElementById('q-from').value = toLocalDT(new Date(fromMs));
-    document.getElementById('q-to').value   = toLocalDT(new Date(toMs));
-  } else {
-    const now  = new Date();
-    const from = new Date(now.getTime() - 60 * 60 * 1000);
-    document.getElementById('q-from').value = toLocalDT(from);
-    document.getElementById('q-to').value   = toLocalDT(now);
-  }
-
-  startCountdown();
-}
-
-function toLocalDT(d) {
-  const pad = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function startCountdown() {
-  if (countdownTimer) clearInterval(countdownTimer);
-  const el = document.getElementById('query-countdown');
-  countdownTimer = setInterval(() => {
-    const left = Math.max(0, sessionExpires - Math.floor(Date.now() / 1000));
-    const m    = String(Math.floor(left / 60)).padStart(2, '0');
-    const s    = String(left % 60).padStart(2, '0');
-    el.textContent = `${m}:${s}`;
-    el.classList.toggle('urgent', left < 120);
-    if (left === 0) {
-      clearInterval(countdownTimer);
-      document.getElementById('query-panel').classList.remove('visible');
-      sessionId = null;
-    }
-  }, 1000);
-}
-
-async function runQuery() {
-  if (!sessionId) return;
-  hideErr('query');
-  document.getElementById('query-results').classList.remove('visible');
-
-  const fromVal = document.getElementById('q-from').value;
-  const toVal   = document.getElementById('q-to').value;
-  if (!fromVal || !toVal) { showErr('query', 'Please set both From and To timestamps.'); return; }
-
-  const fromIso = new Date(fromVal).toISOString();
-  const toIso   = new Date(toVal).toISOString();
-
-  const btn = document.getElementById('btn-query');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span><span>Querying…</span>';
-
-  try {
-    const resp = await fetch(API_BASE + '/query', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId, from_ts: fromIso, to_ts: toIso })
-    });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || 'Query failed');
-    renderQueryResults(data);
-  } catch(e) {
-    showErr('query', e.message || 'Query failed');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<span>⚡ Query with DuckDB</span>';
-  }
-}
-
-function renderQueryResults(data) {
-  const rows  = data.rows || [];
-  const meta  = document.getElementById('query-meta');
-  meta.textContent = `${data.row_count} rows · ${data.elapsed_ms} ms · field: ${data.ts_field}`;
-
-  if (rows.length === 0) {
-    document.getElementById('query-thead').innerHTML = '';
-    const d = data.debug || {};
-    let msg = `No results for ${data.query_from?.slice(0,16)} → ${data.query_to?.slice(0,16)}`;
-    if (d.actual_ts_value)
-      msg += `<br>Example timestamp in file: <b>${d.actual_ts_value}</b>`;
-    else if (d.sample_rows && d.sample_rows.length === 0)
-      msg += '<br>File returned 0 rows — binary may not be found by extension';
-    if (d.sample_error || d.stderr)
-      msg += `<br><span style="color:var(--red)">${d.sample_error || d.stderr}</span>`;
-    document.getElementById('query-tbody').innerHTML =
-      `<tr><td colspan="99" style="color:var(--muted);text-align:center;padding:20px;font-size:12px;line-height:1.8">${msg}</td></tr>`;
-  } else {
-    const cols = Object.keys(rows[0]);
-    document.getElementById('query-thead').innerHTML =
-      '<tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr>';
-    document.getElementById('query-tbody').innerHTML = rows.map(row =>
-      '<tr>' + cols.map(c => `<td title="${String(row[c] ?? '')}">${String(row[c] ?? '')}</td>`).join('') + '</tr>'
-    ).join('');
-  }
-
-  document.getElementById('query-results').classList.add('visible');
 }
 
 // ── HAMBURGER ───────────────────────────────────────────────────────────────

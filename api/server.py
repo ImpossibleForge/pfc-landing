@@ -269,8 +269,8 @@ def query():
             f"  line->>'$.duration_ms'   AS \"duration_ms\", "
             f"  line->>'$.message'       AS \"message\" "
             f"FROM read_pfc_jsonl('{pfc_path}') "
-            f"WHERE line->>'$.{ts_field}' >= '{clean_ts(from_ts)}' "
-            f"  AND line->>'$.{ts_field}' <= '{clean_ts(to_ts)}' "
+            f"WHERE json_extract_string(line, '$.{ts_field}') >= '{clean_ts(from_ts)}' "
+            f"  AND json_extract_string(line, '$.{ts_field}') <= '{clean_ts(to_ts)}' "
             f"LIMIT 200;"
         )
         result = subprocess.run(

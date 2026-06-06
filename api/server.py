@@ -258,7 +258,7 @@ def query():
     if has_bidx:
         # DuckDB extension path — uses BIDX block-level index + read_pfc_jsonl()
         sql = (
-            f"LOAD pfc; LOAD json; "
+            f"LOAD pfc; "
             f"SELECT "
             f"  line->>'$.{ts_field}'    AS timestamp, "
             f"  line->>'$.level'         AS level, "

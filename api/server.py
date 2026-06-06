@@ -113,6 +113,9 @@ def compress():
     if len(data) > MAX_BYTES:
         return jsonify({'error': f'File too large. Maximum is {MAX_MB} MB.'}), 413
 
+    # Normalize CRLF → LF so DuckDB extension (which strips only \n) sees clean lines
+    data = data.replace(b'\r\n', b'\n')
+
     ts_field = _detect_ts_field(data)
     ts_min, ts_max = _detect_ts_range(data, ts_field)
 

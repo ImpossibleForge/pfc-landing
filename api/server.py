@@ -362,6 +362,45 @@ def session_info(session_id):
     })
 
 
+@app.route('/debug/query/<session_id>', methods=['GET'])
+def debug_query(session_id):
+    """Debug: run read_pfc_jsonl without WHERE, return first 3 rows raw."""
+    if not re.fullmatch(r'[0-9a-f\-]{36}', session_id):
+        return jsonify({'error': 'Invalid session_id'}), 400
+    session = _read_session(session_id)
+    if not session:
+        return jsonify({'error': 'Session not found'}), 404
+    pfc_path  = session['path']
+    bidx_path = pfc_path + '.bidx'
+    has_bidx  = os.path.exists(bidx_path)
+    env = {**os.environ, 'PFC_JSONL_BINARY': BINARY}
+
+    # Test 1: bare read without WHERE
+    sql_bare = f"LOAD pfc; SELECT line FROM read_pfc_jsonl('{pfc_path}') LIMIT 3;"
+    r1 = subprocess.run([DUCKDB, '-json', '-c', sql_bare],
+                        capture_output=True, timeout=30, env=env)
+
+    # Test 2: json extraction test
+    sql_json = f"LOAD pfc; SELECT line->>'$.timestamp' AS ts, line->>'timestamp' AS ts2 FROM read_pfc_jsonl('{pfc_path}') LIMIT 3;"
+    r2 = subprocess.run([DUCKDB, '-json', '-c', sql_json],
+                        capture_output=True, timeout=30, env=env)
+
+    # Test 3: pfc binary version
+    r3 = subprocess.run([BINARY, '--version'], capture_output=True, timeout=10)
+
+    return jsonify({
+        'pfc_path':   pfc_path,
+        'bidx_exists': has_bidx,
+        'bare_rc':    r1.returncode,
+        'bare_stdout': r1.stdout.decode('utf-8', errors='replace')[:500],
+        'bare_stderr': r1.stderr.decode('utf-8', errors='replace')[:500],
+        'json_rc':    r2.returncode,
+        'json_stdout': r2.stdout.decode('utf-8', errors='replace')[:500],
+        'json_stderr': r2.stderr.decode('utf-8', errors='replace')[:500],
+        'binary_version': r3.stdout.decode('utf-8', errors='replace')[:100],
+    })
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)

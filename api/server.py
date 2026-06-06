@@ -256,19 +256,11 @@ def query():
     t0 = time.time()
 
     if has_bidx:
-        # DuckDB extension path — uses BIDX block-level index + read_pfc_jsonl()
+        # DuckDB extension path — select raw line, parse all fields in Python
+        # so every field from the user's actual log format is returned
         sql = (
             f"LOAD pfc; "
-            f"SELECT "
-            f"  line->>'$.{ts_field}'    AS \"ts\", "
-            f"  line->>'$.level'         AS \"level\", "
-            f"  line->>'$.service'       AS \"service\", "
-            f"  line->>'$.method'        AS \"method\", "
-            f"  line->>'$.path'          AS \"path\", "
-            f"  line->>'$.status'        AS \"status\", "
-            f"  line->>'$.duration_ms'   AS \"duration_ms\", "
-            f"  line->>'$.message'       AS \"message\" "
-            f"FROM read_pfc_jsonl('{pfc_path}') "
+            f"SELECT line FROM read_pfc_jsonl('{pfc_path}') "
             f"WHERE json_extract_string(line, '$.{ts_field}') >= '{clean_ts(from_ts)}' "
             f"  AND json_extract_string(line, '$.{ts_field}') <= '{clean_ts(to_ts)}' "
             f"LIMIT 200;"
@@ -324,9 +316,15 @@ def query():
             'engine': 'pfc_query_cli',
         })
 
-    # DuckDB path result
+    # DuckDB path result — parse raw line strings into full dicts (all user fields)
     try:
-        rows = json.loads(result.stdout.decode('utf-8'))
+        raw_rows = json.loads(result.stdout.decode('utf-8'))
+        rows = []
+        for r in raw_rows:
+            try:
+                rows.append(json.loads(r['line']) if isinstance(r.get('line'), str) else r)
+            except Exception:
+                rows.append(r)
     except json.JSONDecodeError:
         rows = []
 

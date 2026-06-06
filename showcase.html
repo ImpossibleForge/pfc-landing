@@ -971,26 +971,50 @@ footer a:hover { color: var(--white); }
 
   </div>
 
-  <!-- ── QUERY COMING SOON ── -->
-  <div class="query-coming">
-    <div class="qc-left">
-      <div class="qc-badge">Coming Soon</div>
-      <div class="qc-title">Query your archive — without decompressing</div>
-      <div class="qc-desc">
-        Once compressed, PFC-JSONL lets you query any 1-hour window directly from the cold archive
-        using the BIDX block index. No full decompression. No restore step.
+  <!-- ── QUERY PANEL ── -->
+  <div class="query-panel" id="query-panel">
+    <div class="query-divider">⚡ Query your archive — no decompression needed</div>
+
+    <div class="query-session-bar">
+      <span class="query-session-label">Session active —</span>
+      <span class="query-countdown" id="query-countdown">15:00</span>
+      <span class="query-session-label">remaining · file auto-deleted after expiry</span>
+    </div>
+
+    <div class="query-inputs">
+      <div class="query-field">
+        <label class="query-label" for="q-from">From</label>
+        <input type="datetime-local" class="query-dt" id="q-from" step="1">
       </div>
-      <div class="qc-example">
-        <span class="qc-ex-label">Example</span>
-        <code>pfc_jsonl query archive.pfc --from 2026-06-04T14:00Z --to 2026-06-04T15:00Z --out out.jsonl</code>
+      <div class="query-field">
+        <label class="query-label" for="q-to">To</label>
+        <input type="datetime-local" class="query-dt" id="q-to" step="1">
       </div>
     </div>
-    <div class="qc-right">
-      <div class="qc-duck">🦆</div>
-      <div class="qc-duck-text">
-        Full SQL on your .pfc files via our official<br>
-        <a href="https://github.com/ImpossibleForge/pfc-duckdb" target="_blank" class="duckdb-link">DuckDB Community Extension</a><br>
-        <a href="https://github.com/davidgasquez/awesome-duckdb" target="_blank" class="duckdb-link" style="font-size:11px;opacity:0.7">on the DuckDB Awesome List ↗</a>
+
+    <button class="btn-query" id="btn-query" onclick="runQuery()">
+      <span>⚡ Query with DuckDB</span>
+    </button>
+
+    <div class="duckdb-badge">
+      <span class="duckdb-icon">🦆</span>
+      <span>Powered by the official</span>
+      <a href="https://github.com/ImpossibleForge/pfc-duckdb" target="_blank" class="duckdb-link">PFC-JSONL DuckDB Community Extension</a>
+      <span>·</span>
+      <a href="https://github.com/davidgasquez/awesome-duckdb" target="_blank" class="duckdb-link" style="opacity:0.7;font-size:11px">on the DuckDB Awesome List ↗</a>
+    </div>
+
+    <div id="query-err" style="display:none;color:var(--red);font-size:13px;padding:8px 12px;background:rgba(244,67,54,0.08);border:1px solid rgba(244,67,54,0.2);border-radius:5px;"></div>
+
+    <div class="query-results" id="query-results">
+      <div class="query-results-header">
+        <span class="query-meta" id="query-meta"></span>
+      </div>
+      <div class="query-table-wrap">
+        <table class="query-table" id="query-table">
+          <thead id="query-thead"></thead>
+          <tbody id="query-tbody"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -1239,11 +1263,116 @@ async function runDecompress() {
   }
 }
 
-// Session captured for future live query feature
-function activateSession(sid, expiresUnix, tsField) {
+// ── SESSION / QUERY ─────────────────────────────────────────────────────────
+let countdownTimer = null;
+
+function activateSession(sid, expiresUnix, tsField, tsMin, tsMax) {
   sessionId      = sid;
   sessionExpires = expiresUnix;
   sessionTsField = tsField || 'timestamp';
+
+  // Pre-fill time range from file's actual timestamp range
+  if (tsMin && tsMax) {
+    document.getElementById('q-from').value = toDatetimeLocal(tsMin);
+    document.getElementById('q-to').value   = toDatetimeLocal(tsMax);
+  } else {
+    // Fallback: last hour
+    const now  = new Date();
+    const hour = new Date(now.getTime() - 3600000);
+    document.getElementById('q-from').value = toDatetimeLocal(hour.toISOString());
+    document.getElementById('q-to').value   = toDatetimeLocal(now.toISOString());
+  }
+
+  // Show panel
+  document.getElementById('query-panel').classList.add('visible');
+  document.getElementById('query-err').style.display = 'none';
+  document.getElementById('query-results').classList.remove('visible');
+
+  // Countdown
+  if (countdownTimer) clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    const rem = Math.max(0, expiresUnix - Math.floor(Date.now() / 1000));
+    const m = String(Math.floor(rem / 60)).padStart(2, '0');
+    const s = String(rem % 60).padStart(2, '0');
+    const el = document.getElementById('query-countdown');
+    if (el) {
+      el.textContent = m + ':' + s;
+      el.classList.toggle('urgent', rem < 120);
+    }
+    if (rem === 0) clearInterval(countdownTimer);
+  }, 1000);
+}
+
+function toDatetimeLocal(isoStr) {
+  // Convert ISO string to datetime-local format (YYYY-MM-DDTHH:MM)
+  return isoStr.replace('Z', '').slice(0, 16);
+}
+
+async function runQuery() {
+  if (!sessionId) return;
+  const fromVal = document.getElementById('q-from').value;
+  const toVal   = document.getElementById('q-to').value;
+  if (!fromVal || !toVal) { showQueryErr('Please set both From and To times.'); return; }
+
+  const fromTs = fromVal.replace('T', 'T') + ':00Z';
+  const toTs   = toVal.replace('T', 'T')   + ':00Z';
+
+  const btn = document.getElementById('btn-query');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span><span>Querying…</span>';
+  document.getElementById('query-err').style.display = 'none';
+  document.getElementById('query-results').classList.remove('visible');
+
+  try {
+    const resp = await fetch(API_BASE + '/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, from_ts: fromTs, to_ts: toTs })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.error) {
+      showQueryErr(data.error || 'Query failed (status ' + resp.status + ')');
+      return;
+    }
+    renderQueryResults(data);
+  } catch(e) {
+    showQueryErr(e.message || 'Network error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>⚡ Query with DuckDB</span>';
+  }
+}
+
+function showQueryErr(msg) {
+  const el = document.getElementById('query-err');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function renderQueryResults(data) {
+  const rows   = data.rows || [];
+  const engine = data.engine === 'duckdb_extension' ? '🦆 DuckDB Extension' : '⚡ pfc_jsonl query';
+  const meta   = `${rows.length} row${rows.length !== 1 ? 's' : ''} · ${data.elapsed_ms} ms · ${engine}`;
+  document.getElementById('query-meta').textContent = meta;
+
+  if (rows.length === 0) {
+    document.getElementById('query-err').textContent = 'No results in this time range.';
+    document.getElementById('query-err').style.display = 'block';
+    document.getElementById('query-results').classList.remove('visible');
+    return;
+  }
+
+  // Build table from first row's keys
+  const cols = Object.keys(rows[0]).filter(k => k !== null);
+  const thead = document.getElementById('query-thead');
+  const tbody = document.getElementById('query-tbody');
+  thead.innerHTML = '<tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr>';
+  tbody.innerHTML = rows.map(row =>
+    '<tr>' + cols.map(c => `<td title="${String(row[c] ?? '')}">${String(row[c] ?? '')}</td>`).join('') + '</tr>'
+  ).join('');
+
+  document.getElementById('query-results').classList.add('visible');
+  document.getElementById('query-err').style.display = 'none';
 }
 
 // ── HAMBURGER ───────────────────────────────────────────────────────────────

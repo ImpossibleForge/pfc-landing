@@ -401,6 +401,17 @@ def debug_query(session_id):
     # Test 5: pfc info (verify file is valid)
     r5 = subprocess.run([BINARY, 'info', pfc_path], capture_output=True, timeout=10)
 
+    # Test 6: exact WHERE query (replicate what /query does)
+    ts_field = session.get('ts_field', 'timestamp')
+    sql_where = (
+        f"LOAD pfc; "
+        f"SELECT line->>'$.{ts_field}' AS ts FROM read_pfc_jsonl('{pfc_path}') "
+        f"WHERE line->>'$.{ts_field}' >= '2026-06-06T01:00:00Z' "
+        f"  AND line->>'$.{ts_field}' <= '2026-06-06T02:00:00Z' LIMIT 5;"
+    )
+    r6 = subprocess.run([DUCKDB, '-json', '-c', sql_where],
+                        capture_output=True, timeout=30, env=env)
+
     return jsonify({
         'pfc_path':        pfc_path,
         'bidx_exists':     has_bidx,
@@ -416,6 +427,9 @@ def debug_query(session_id):
         'seek_first_line': seek_out[:200],
         'seek_stderr':     r4.stderr.decode('utf-8', errors='replace')[:200],
         'pfc_info':        r5.stdout.decode('utf-8', errors='replace')[:300],
+        'where_rc':        r6.returncode,
+        'where_stdout':    r6.stdout.decode('utf-8', errors='replace')[:300],
+        'where_stderr':    r6.stderr.decode('utf-8', errors='replace')[:400],
     })
 
 

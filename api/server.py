@@ -388,16 +388,31 @@ def debug_query(session_id):
     # Test 3: pfc binary version
     r3 = subprocess.run([BINARY, '--version'], capture_output=True, timeout=10)
 
+    # Test 4: run seek-blocks directly (what the extension does internally)
+    r4 = subprocess.run(
+        [BINARY, 'seek-blocks', '--blocks', '0', '--', pfc_path],
+        capture_output=True, timeout=30
+    )
+    seek_out = r4.stdout.decode('utf-8', errors='replace')
+
+    # Test 5: pfc info (verify file is valid)
+    r5 = subprocess.run([BINARY, 'info', pfc_path], capture_output=True, timeout=10)
+
     return jsonify({
-        'pfc_path':   pfc_path,
-        'bidx_exists': has_bidx,
-        'bare_rc':    r1.returncode,
-        'bare_stdout': r1.stdout.decode('utf-8', errors='replace')[:500],
-        'bare_stderr': r1.stderr.decode('utf-8', errors='replace')[:500],
-        'json_rc':    r2.returncode,
-        'json_stdout': r2.stdout.decode('utf-8', errors='replace')[:500],
-        'json_stderr': r2.stderr.decode('utf-8', errors='replace')[:500],
-        'binary_version': r3.stdout.decode('utf-8', errors='replace')[:100],
+        'pfc_path':        pfc_path,
+        'bidx_exists':     has_bidx,
+        'binary_version':  r3.stdout.decode('utf-8', errors='replace').strip(),
+        'bare_rc':         r1.returncode,
+        'bare_stdout':     r1.stdout.decode('utf-8', errors='replace')[:500],
+        'bare_stderr':     r1.stderr.decode('utf-8', errors='replace')[:500],
+        'json_rc':         r2.returncode,
+        'json_stdout':     r2.stdout.decode('utf-8', errors='replace')[:500],
+        'json_stderr':     r2.stderr.decode('utf-8', errors='replace')[:500],
+        'seek_rc':         r4.returncode,
+        'seek_lines':      len([l for l in seek_out.splitlines() if l.strip()]),
+        'seek_first_line': seek_out[:200],
+        'seek_stderr':     r4.stderr.decode('utf-8', errors='replace')[:200],
+        'pfc_info':        r5.stdout.decode('utf-8', errors='replace')[:300],
     })
 
 

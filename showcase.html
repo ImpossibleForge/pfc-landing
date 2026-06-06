@@ -439,12 +439,26 @@ nav {
 
 /* ── QUERY PANEL ── */
 .query-panel {
-  display: none;
+  display: flex;
   flex-direction: column;
   gap: 14px;
   margin-top: 4px;
 }
-.query-panel.visible { display: flex; }
+
+.query-locked {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px dashed rgba(255,255,255,0.12);
+  border-radius: 6px;
+  padding: 14px 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.query-locked-icon { font-size: 16px; opacity: 0.6; }
+.query-active { display: none; flex-direction: column; gap: 14px; }
+.query-active.visible { display: flex; }
 
 .query-divider {
   display: flex;
@@ -975,6 +989,14 @@ footer a:hover { color: var(--white); }
   <div class="query-panel" id="query-panel">
     <div class="query-divider">⚡ Query your archive — no decompression needed</div>
 
+    <!-- Locked state (before compression) -->
+    <div class="query-locked" id="query-locked">
+      <span class="query-locked-icon">🔒</span>
+      <span>Compress a JSONL log file above to unlock time-range queries via the DuckDB Community Extension — no full decompression required.</span>
+    </div>
+
+    <!-- Active state (after compression) -->
+    <div class="query-active" id="query-active">
     <div class="query-session-bar">
       <span class="query-session-label">Session active —</span>
       <span class="query-countdown" id="query-countdown">15:00</span>
@@ -1017,6 +1039,7 @@ footer a:hover { color: var(--white); }
         </table>
       </div>
     </div>
+    </div> <!-- /query-active -->
   </div>
 
 </div>
@@ -1283,8 +1306,9 @@ function activateSession(sid, expiresUnix, tsField, tsMin, tsMax) {
     document.getElementById('q-to').value   = toDatetimeLocal(now.toISOString());
   }
 
-  // Show panel
-  document.getElementById('query-panel').classList.add('visible');
+  // Switch locked → active
+  document.getElementById('query-locked').style.display = 'none';
+  document.getElementById('query-active').classList.add('visible');
   document.getElementById('query-err').style.display = 'none';
   document.getElementById('query-results').classList.remove('visible');
 
